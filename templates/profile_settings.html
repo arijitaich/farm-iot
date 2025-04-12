@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile Settings</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        .hidden {
+            display: none;
+        }
+
+        .loader {
+            border-top-color: transparent;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .sidebar {
+            display: none;
+        }
+
+        @media (min-width: 1024px) {
+            .sidebar {
+                display: block;
+            }
+        }
+
+        .transform {
+            transform: translateX(-100%);
+        }
+
+        .transform-active {
+            transform: translateX(0);
+        }
+
+        .transition-transform {
+            transition: transform 0.3s ease-in-out;
+        }
+
+        .hover-effect:hover {
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.25);
+            transform: scale(1.05);
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .card-border {
+            border: 2px solid white;
+            border-radius: 0.5rem;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-900 min-h-screen flex flex-col text-gray-200">
+
+    <!-- Navigation Bar -->
+    <nav class="bg-gradient-to-r from-purple-800 to-indigo-900 shadow-lg p-4 flex justify-between items-center relative">
+        <div class="text-lg font-semibold text-white">IoT-InQube Profile Settings</div>
+        <div class="flex space-x-2 items-center">
+            <div class="relative">
+                <button id="menu-btn" class="bg-gray-800 text-white px-4 py-2 rounded-lg">Menu</button>
+                <div id="desktop-dropdown" class="hidden absolute right-0 mt-2 w-48 bg-gray-800 text-white shadow-lg">
+                    <ul>
+                        
+                        <li class="mb-4 p-2 hover:bg-gray-700">
+                            <a href="/dashboard" class="text-gray-400 hover:text-indigo-500">Devices</a>
+                        </li>
+                        <li class="mb-4 p-2 hover:bg-gray-700">
+                            <a href="/profile_settings" class="text-gray-400 hover:text-indigo-500">Settings</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <button id="logout-btn" class="bg-red-600 text-white px-4 py-2 rounded">Logout</button>
+        </div>
+    </nav>
+
+    <!-- Sidebar for Mobile -->
+    <aside id="mobile-sidebar" class="bg-gray-800 w-64 p-4 shadow-lg fixed inset-y-0 left-0 transform transition-transform lg:hidden -translate-x-full">
+        <div class="flex justify-end mb-4">
+            <button id="close-sidebar-btn" class="bg-gray-800 text-white px-2 py-1">X</button>
+        </div>
+        <nav>
+            <ul>
+                
+                <li class="mb-4">
+                    <a href="/dashboard" class="text-gray-400 hover:text-indigo-500">Devices</a>
+                </li>
+                <li class="mb-4">
+                    <a href="/profile_settings" class="text-gray-400 hover:text-indigo-500">Settings</a>
+                </li>
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- Sidebar for Desktop -->
+    <aside id="desktop-sidebar" class="bg-gray-800 w-64 p-4 shadow-lg hidden lg:block">
+        <nav>
+            <ul>
+                
+                <li class="mb-4">
+                    <a href="/dashboard" class="text-gray-400 hover:text-indigo-500">Devices</a>
+                </li>
+                <li class="mb-4">
+                    <a href="/profile_settings" class="text-gray-400 hover:text-indigo-500">Settings</a>
+                </li>
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="flex flex-grow">
+        <!-- Main Content Area -->
+        <main class="flex-grow p-4 md:p-8">
+            <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
+                    <div>
+                        <h1 class="text-3xl font-semibold text-gray-200 mb-4">Profile Settings</h1>
+                        <p class="text-gray-400 mb-8">Change your password below.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Password Change Form -->
+            <div class="bg-gray-800 p-6 mt-6 rounded-lg shadow-lg text-white">
+                <h2 class="text-2xl font-semibold mb-4">Change Password</h2>
+                <form id="password-change-form">
+                    <div class="mb-4">
+                        <label for="current-password" class="block text-gray-400">Current Password</label>
+                        <input type="password" id="current-password" name="current-password" class="w-full px-3 py-2 border rounded-lg text-black" required>
+                    </div>
+                    <div class="mb-4">
+                        <label for="new-password" class="block text-gray-400">New Password</label>
+                        <input type="password" id="new-password" name="new-password" class="w-full px-3 py-2 border rounded-lg text-black" required>
+                    </div>
+                    <div class="mb-4">
+                        <label for="confirm-new-password" class="block text-gray-400">Confirm New Password</label>
+                        <input type="password" id="confirm-new-password" name="confirm-new-password" class="w-full px-3 py-2 border rounded-lg text-black" required>
+                    </div>
+                    <div class="flex justify-end">
+                        <button type="button" id="cancel-password-change" class="bg-gray-500 text-white px-4 py-2 rounded-lg mr-2">Cancel</button>
+                        <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-lg">Change Password</button>
+                    </div>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <!-- Loader Modal -->
+    <div id="loader-modal" class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 hidden">
+        <div class="flex flex-col items-center">
+            <div class="loader border-4 border-blue-500"></div>
+            <p class="text-white mt-4">Please Wait...</p>
+        </div>
+    </div>
+
+    <!-- Error Modal -->
+    <div id="error-modal" class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 hidden">
+        <div class="bg-white p-6 rounded-lg shadow-lg w-80">
+            <div class="flex items-center">
+                <svg class="h-6 w-6 text-red-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-12.728 12.728m12.728 0L5.636 5.636" />
+                </svg>
+                <h3 class="text-lg font-semibold text-gray-900">Error</h3>
+            </div>
+            <div id="error-message" class="mt-4 text-gray-700"></div>
+            <div class="mt-6 text-right">
+                <button id="error-modal-close" class="bg-red-500 text-white px-4 py-2 rounded">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="success-modal" class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 hidden">
+        <div class="bg-white p-6 rounded-lg shadow-lg w-80">
+            <div class="flex items-center">
+                <svg class="h-6 w-6 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                <h3 class="text-lg font-semibold text-gray-900">Success</h3>
+            </div>
+            <div id="success-message" class="mt-4 text-gray-700"></div>
+            <div class="mt-6 text-right">
+                <button id="success-modal-close" class="bg-green-500 text-white px-4 py-2 rounded">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Document is ready');
+
+            function showError(message) {
+                const errorMessage = document.getElementById('error-message');
+                errorMessage.textContent = message;
+                const errorModal = document.getElementById('error-modal');
+                errorModal.classList.remove('hidden');
+            }
+
+            function showSuccess(message) {
+                const successMessage = document.getElementById('success-message');
+                successMessage.textContent = message;
+                const successModal = document.getElementById('success-modal');
+                successModal.classList.remove('hidden');
+            }
+
+            function closeModals() {
+                document.getElementById('error-modal').classList.add('hidden');
+                document.getElementById('success-modal').classList.add('hidden');
+            }
+
+            document.getElementById('error-modal-close').addEventListener('click', function() {
+                document.getElementById('error-modal').classList.add('hidden');
+            });
+
+            document.getElementById('success-modal-close').addEventListener('click', closeModals);
+
+            document.getElementById('logout-btn').addEventListener('click', function () {
+                showLoader();
+                fetch('/logout', { method: 'POST' })
+                    .then(response => {
+                        hideLoader();
+                        if (response.ok) {
+                            window.location.href = '/';
+                        } else {
+                            showError('Logout failed. Please try again.');
+                        }
+                    })
+                    .catch(error => {
+                        hideLoader();
+                        showError('An error occurred. Please try again.');
+                    });
+            });
+
+            document.getElementById('menu-btn').addEventListener('click', function () {
+                const mobileSidebar = document.getElementById('mobile-sidebar');
+                const desktopDropdown = document.getElementById('desktop-dropdown');
+                if (window.innerWidth >= 1024) {
+                    desktopDropdown.classList.toggle('hidden');
+                } else {
+                    mobileSidebar.classList.toggle('transform');
+                    mobileSidebar.classList.toggle('transform-active');
+                }
+            });
+
+            document.getElementById('close-sidebar-btn').addEventListener('click', function () {
+                const mobileSidebar = document.getElementById('mobile-sidebar');
+                mobileSidebar.classList.add('transform');
+                mobileSidebar.classList.remove('transform-active');
+            });
+
+            document.addEventListener('click', function (event) {
+                const desktopDropdown = document.getElementById('desktop-dropdown');
+                const menuBtn = document.getElementById('menu-btn');
+                const isClickInside = desktopDropdown.contains(event.target) || menuBtn.contains(event.target);
+
+                if (!isClickInside && !desktopDropdown.classList.contains('hidden')) {
+                    desktopDropdown.classList.add('hidden');
+                }
+            });
+
+            document.getElementById('password-change-form').addEventListener('submit', function (event) {
+                event.preventDefault();
+                console.log('Form submitted');
+
+                showLoader();
+
+                const currentPassword = document.getElementById('current-password').value;
+                const newPassword = document.getElementById('new-password').value;
+                const confirmNewPassword = document.getElementById('confirm-new-password').value;
+
+                if (newPassword !== confirmNewPassword) {
+                    showError('New passwords do not match.');
+                    hideLoader();
+                    return;
+                }
+
+                fetch('/change-password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    },
+                    body: JSON.stringify({
+                        current_password: currentPassword,
+                        new_password: newPassword
+                    })
+                })
+                .then(response => {
+                    console.log('Response received');
+                    return response.json();
+                })
+                .then(data => {
+                    hideLoader();
+                    if (data.error) {
+                        showError(`Failed to change password: ${data.error}`);
+                    } else {
+                        showSuccess('Password changed successfully.');
+                    }
+                })
+                .catch(error => {
+                    hideLoader();
+                    console.error('Error:', error);
+                    showError('An error occurred. Please try again.');
+                });
+            });
+
+            document.getElementById('cancel-password-change').addEventListener('click', function () {
+                window.location.href = '/dashboard';
+            });
+
+            function showLoader() {
+                console.log('Showing loader');
+                const loaderModal = document.getElementById('loader-modal');
+                loaderModal.classList.remove('hidden');
+            }
+
+            function hideLoader() {
+                console.log('Hiding loader');
+                const loaderModal = document.getElementById('loader-modal');
+                loaderModal.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+
+</html>
