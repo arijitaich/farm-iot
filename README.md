@@ -50,7 +50,7 @@ farm-iot/
 
 ### 1. Clone the repository
 
-git clone https://github.com/your-org/farm-iot.git
+git clone https://github.com/arijitaich/farm-iot
 cd farm-iot
 
 ### 2. Create and activate a virtual environment
