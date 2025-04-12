@@ -1,6 +1,3 @@
-<<<<<<< HEAD
-# farm-iot
-=======
 # 🌾 Farm-IoT Platform
 
 A production-ready Flask-based IoT platform for securely ingesting, storing, and managing device data — with support for user registration, login, and device dashboards.
@@ -108,4 +105,3 @@ Pull requests and feedback welcome. For major changes, please open an issue firs
 
 ### 📜 License
 MIT License – use it, modify it, improve it.
->>>>>>> 0f25841 (Initial commit: Project structure with Flask app factory, user auth, MySQL models, and Redis queue setup)
