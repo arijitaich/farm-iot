@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        .hidden {
+            display: none;
+        }
+
+        .loader {
+            border-top-color: transparent;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .sidebar {
+            display: none;
+        }
+
+        @media (min-width: 1024px) {
+            .sidebar {
+                display: block;
+            }
+        }
+
+        .transform {
+            transform: translateX(-100%);
+        }
+
+        .transform-active {
+            transform: translateX(0);
+        }
+
+        .transition-transform {
+            transition: transform 0.3s ease-in-out;
+        }
+
+        .hover-effect:hover {
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.25);
+            transform: scale(1.05);
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .card-border {
+            border: 2px solid white;
+            border-radius: 0.5rem;
+        }
+    </style>
+    <link href="https://cdn.jsdelivr.net/npm/hopscotch@0.3.1/dist/css/hopscotch.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/hopscotch@0.3.1/dist/js/hopscotch.min.js"></script>
+    <style>
+        .hopscotch-bubble-container {
+            max-width: 250px; /* Adjust the width to fit within your layout */
+            overflow: hidden;
+        }
+        
+        .hopscotch-bubble-arrow {
+            display: none; /* Optionally, hide the arrow if it's causing layout issues */
+        }
+    </style>
+    
+    
+</head>
+
+<body class="bg-gray-900 min-h-screen flex flex-col ">
+
+    <!-- Navigation Bar -->
+    <nav class="bg-gradient-to-r from-purple-800 to-indigo-900 shadow-lg p-4 flex justify-between items-center relative">
+        <div class="text-lg font-semibold text-white">IoT-InQube Dashboard</div>
+        <div class="flex space-x-2 items-center">
+            <div class="relative">
+                <button id="menu-btn" class="bg-gray-800 text-white px-4 py-2 rounded-lg">Menu</button>
+                <div id="desktop-dropdown" class="hidden absolute right-0 mt-2 w-48 bg-gray-800 text-white shadow-lg">
+                    <ul>
+                        
+                        <li class="mb-4 p-2 hover:bg-gray-700">
+                            <a href="/dashboard" class="text-gray-400 hover:text-indigo-500">Devices</a>
+                        </li>
+                        <li class="mb-4 p-2 hover:bg-gray-700">
+                            <a href="/profile_settings" class="text-gray-400 hover:text-indigo-500">Settings</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <button id="logout-btn" class="bg-red-600 text-white px-4 py-2 rounded">Logout</button>
+        </div>
+    </nav>
+
+    <!-- Sidebar for Mobile -->
+    <aside id="mobile-sidebar" class="bg-gray-800 w-64 p-4 shadow-lg fixed inset-y-0 left-0 transform transition-transform lg:hidden -translate-x-full">
+        <div class="flex justify-end mb-4">
+            <button id="close-sidebar-btn" class="bg-gray-800 text-white px-2 py-1">X</button>
+        </div>
+        <nav>
+            <ul>
+                
+                <li class="mb-4">
+                    <a href="/dashboard" class="text-gray-400 hover:text-indigo-500">Devices</a>
+                </li>
+                <li class="mb-4">
+                    <a href="/profile_settings" class="text-gray-400 hover:text-indigo-500">Settings</a>
+                </li>
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- Sidebar for Desktop -->
+    <aside id="desktop-sidebar" class="bg-gray-800 w-64 p-4 shadow-lg hidden lg:block">
+        <nav>
+            <ul>
+                
+                <li class="mb-4">
+                    <a href="/dashboard" class="text-gray-400 hover:text-indigo-500">Devices</a>
+                </li>
+                <li class="mb-4">
+                    <a href="/profile_settings" class="text-gray-400 hover:text-indigo-500">Settings</a>
+                </li>
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="flex flex-grow">
+        <!-- Main Content Area -->
+        <main class="flex-grow p-4 md:p-8">
+            <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
+                    <div>
+                        <h1 class="text-3xl font-semibold text-gray-200 mb-4">Welcome to Your Dashboard</h1>
+                        <p class="text-gray-400 mb-8">Here you can monitor and manage your IoT devices.</p>
+                    </div>
+                    <button id="add-device-btn" class="bg-green-500 text-white px-4 py-2 rounded flex items-center mb-4 md:mb-0">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                        </svg>
+                        Add New Device
+                    </button>
+                    
+                </div>
+            </div>
+
+            <!-- Overall Stats Card -->
+            <div class="bg-gray-800 p-6 mt-6 rounded-lg shadow-lg text-white ">
+                <h2 class="text-2xl font-semibold mb-4">Overall Stats</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-gradient-to-r from-teal-500 to-cyan-600 p-4 rounded-lg shadow-lg text-white card-border">
+                        <h3 class="text-lg font-semibold">Total Devices</h3>
+                        <p class="text-2xl" id="total-devices">0</p> <!-- Set default to 0 -->
+                    </div>
+                    <div class="bg-gradient-to-r from-teal-500 to-cyan-600 p-4 rounded-lg shadow-lg text-white card-border">
+                        <h3 class="text-lg font-semibold">Active Devices</h3>
+                        <p class="text-2xl" id="active-devices">0</p> <!-- Set default to 0 -->
+                    </div>
+                    <div class="bg-gradient-to-r from-teal-500 to-cyan-600 p-4 rounded-lg shadow-lg text-white card-border">
+                        <h3 class="text-lg font-semibold">Inactive Devices</h3>
+                        <p class="text-2xl" id="inactive-devices">0</p> <!-- Set default to 0 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content cards or widgets -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8" id="device-cards">
+                <!-- Example card -->
+            </div>
+        </main>
+    </div>
+
+    <!-- Loader Modal -->
+    <div id="loader-modal" class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 hidden">
+        <div class="flex flex-col items-center">
+            <div class="loader border-4 border-blue-500"></div>
+            <p class="text-white mt-4">Please Wait...</p>
+        </div>
+    </div>
+
+    <!-- Add Device Modal -->
+    <div id="add-device-modal" class="fixed inset-0 flex items-center justify-center text-black bg-gray-900 bg-opacity-50 hidden">
+        <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-lg mx-4">
+            <h2 class="text-xl font-semibold mb-4" style="color: black;">Add New Device</h2>
+            <form id="add-device-form">
+                <div class="mb-4">
+                    <label for="device-id" class="block text-gray-700">Device ID</label>
+                    <input type="text" id="device-id" name="deviceId" class="w-full px-3 py-2 border rounded-lg" placeholder="No Spaces Allowed" required>
+                </div>
+                <div class="mb-4">
+                    <label for="device-name" class="block text-gray-700">Device Name</label>
+                    <input type="text" id="device-name" name="deviceName" class="w-full px-3 py-2 border rounded-lg" placeholder="Add Your Device name" required>
+                </div>
+                <div class="mb-4">
+                    <label for="device-type" class="block text-gray-700">Device Type</label>
+                    <input type="text" id="device-type" name="deviceType" class="w-full px-3 py-2 border rounded-lg" placeholder="For e.g. Plant IoT" required>
+                </div>
+                <div class="mb-4">
+                    <label for="device-description" class="block text-gray-700">Device Description</label>
+                    <textarea id="device-description" name="deviceDescription" class="w-full px-3 py-2 border rounded-lg"  placeholder="Add a short description of your device."  required></textarea>
+                </div>
+                <div class="flex justify-end">
+                    <button type="button" id="cancel-add-device" class="bg-gray-500 text-white px-4 py-2 rounded-lg mr-2">Cancel</button>
+                    <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-lg">Add Device</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Error Modal -->
+    <div id="error-modal" class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 hidden">
+        <div class="bg-white p-6 rounded-lg shadow-lg w-80">
+            <div class="flex items-center">
+                <svg class="h-6 w-6 text-red-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-12.728 12.728m12.728 0L5.636 5.636" />
+                </svg>
+                <h3 class="text-lg font-semibold text-gray-900">Error</h3>
+            </div>
+            <div id="error-message" class="mt-4 text-gray-700"></div>
+            <div class="mt-6 text-right">
+                <button id="error-modal-close" class="bg-red-500 text-white px-4 py-2 rounded">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="success-modal" class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 hidden">
+        <div class="bg-white p-6 rounded-lg shadow-lg w-80">
+            <div class="flex items-center">
+                <svg class="h-6 w-6 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                <h3 class="text-lg font-semibold text-gray-900">Success</h3>
+            </div>
+            <div id="success-message" class="mt-4 text-gray-700"></div>
+            <div class="mt-6 text-right">
+                <button id="success-modal-close" class="bg-green-500 text-white px-4 py-2 rounded">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirm Modal -->
+    <div id="confirm-modal" class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 hidden">
+        <div class="bg-white p-6 rounded-lg shadow-lg w-80">
+            <div class="flex items-center">
+                <svg class="h-6 w-6 text-yellow-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m0-4h.01M17.657 4.343A8 8 0 1111.314 17.657 8 8 0 0117.657 4.343z" />
+                </svg>
+                <h3 class="text-lg font-semibold text-gray-900">Confirm</h3>
+            </div>
+            <div id="confirm-message" class="mt-4 text-gray-700"></div>
+            <div class="mt-6 flex justify-end">
+                <button id="confirm-modal-cancel" class="bg-gray-500 text-white px-4 py-2 rounded mr-2">Cancel</button>
+                <button id="confirm-modal-delete" class="bg-red-500 text-white px-4 py-2 rounded">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showError(message) {
+            const errorMessage = document.getElementById('error-message');
+            errorMessage.textContent = message;
+            const errorModal = document.getElementById('error-modal');
+            errorModal.classList.remove('hidden');
+        }
+
+        function showSuccess(message) {
+            const successMessage = document.getElementById('success-message');
+            successMessage.textContent = message;
+            const successModal = document.getElementById('success-modal');
+            successModal.classList.remove('hidden');
+        }
+
+        function closeModals() {
+            document.getElementById('error-modal').classList.add('hidden');
+            document.getElementById('success-modal').classList.add('hidden');
+            document.getElementById('add-device-modal').classList.add('hidden');
+        }
+
+        document.getElementById('error-modal-close').addEventListener('click', function() {
+            document.getElementById('error-modal').classList.add('hidden');
+        });
+
+        document.getElementById('success-modal-close').addEventListener('click', closeModals);
+
+        function showConfirm(message, deviceId) {
+            const confirmMessage = document.getElementById('confirm-message');
+            confirmMessage.textContent = message;
+            const confirmModal = document.getElementById('confirm-modal');
+            confirmModal.classList.remove('hidden');
+            document.getElementById('confirm-modal-delete').dataset.deviceId = deviceId;
+        }
+
+        function closeConfirmModal() {
+            const confirmModal = document.getElementById('confirm-modal');
+            confirmModal.classList.add('hidden');
+        }
+
+        document.getElementById('confirm-modal-cancel').addEventListener('click', closeConfirmModal);
+
+        document.getElementById('confirm-modal-delete').addEventListener('click', function() {
+            const deviceId = this.dataset.deviceId;
+            deleteDevice(deviceId);
+            closeConfirmModal();
+        });
+
+        function showLoader() {
+            const loaderModal = document.getElementById('loader-modal');
+            loaderModal.classList.remove('hidden');
+        }
+
+        function hideLoader() {
+            const loaderModal = document.getElementById('loader-modal');
+            loaderModal.classList.add('hidden');
+        }
+
+        function updateDeviceCards(devices) {
+            const deviceCards = document.getElementById('device-cards');
+            deviceCards.innerHTML = '';
+
+            devices.forEach(device => {
+                const deviceCard = document.createElement('div');
+                deviceCard.className = 'bg-gradient-to-r from-green-400 to-blue-500 p-4 rounded-lg shadow-lg text-black hover-effect ';
+                deviceCard.innerHTML = `
+                    <a href="/device_view/${device.device_id}" class="block no-underline text-black">
+                        <h2 class="text-lg font-semibold mb-2">${device.device_name}</h2>
+                        <p>Status: ${device.status}</p>
+                        <p>Device ID: ${device.device_id}</p>
+                        <p>Type: ${device.device_type}</p>
+                        <p>Description: ${device.device_description}</p>
+                    </a>
+                    <button class="delete-device-btn bg-red-500 text-white px-2 py-1 rounded text-sm mt-2" data-device-id="${device.device_id}">
+                        Delete
+                    </button>
+                `;
+                deviceCards.appendChild(deviceCard);
+            });
+
+            document.querySelectorAll('.delete-device-btn').forEach(button => {
+                button.addEventListener('click', function (event) {
+                    event.stopPropagation();  // Prevent the click from propagating to the card
+                    const deviceId = this.getAttribute('data-device-id');
+                    showConfirm(`Are you sure you want to delete device with ID: ${deviceId}?`, deviceId);
+                });
+            });
+        }
+
+        function fetchDevices() {
+            fetch('/get-devices')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        showError(data.error);
+                    } else {
+                        updateDeviceCards(data.devices);
+                    }
+                })
+                .catch(error => {
+                    showError('An error occurred while fetching devices.');
+                });
+        }
+
+        document.getElementById('logout-btn').addEventListener('click', function () {
+            showLoader();
+            fetch('/logout', { method: 'POST' })
+                .then(response => {
+                    hideLoader();
+                    if (response.ok) {
+                        window.location.href = '/';
+                    } else {
+                        showError('Logout failed. Please try again.');
+                    }
+                })
+                .catch(error => {
+                    hideLoader();
+                    showError('An error occurred. Please try again.');
+                });
+        });
+
+        document.getElementById('menu-btn').addEventListener('click', function () {
+            const mobileSidebar = document.getElementById('mobile-sidebar');
+            const desktopDropdown = document.getElementById('desktop-dropdown');
+            if (window.innerWidth >= 1024) {
+                desktopDropdown.classList.toggle('hidden');
+            } else {
+                mobileSidebar.classList.toggle('transform');
+                mobileSidebar.classList.toggle('transform-active');
+            }
+        });
+
+        document.getElementById('close-sidebar-btn').addEventListener('click', function () {
+            const mobileSidebar = document.getElementById('mobile-sidebar');
+            mobileSidebar.classList.add('transform');
+            mobileSidebar.classList.remove('transform-active');
+        });
+
+        document.addEventListener('click', function (event) {
+            const desktopDropdown = document.getElementById('desktop-dropdown');
+            const menuBtn = document.getElementById('menu-btn');
+            const isClickInside = desktopDropdown.contains(event.target) || menuBtn.contains(event.target);
+
+            if (!isClickInside && !desktopDropdown.classList.contains('hidden')) {
+                desktopDropdown.classList.add('hidden');
+            }
+        });
+
+        document.getElementById('add-device-btn').addEventListener('click', function () {
+            const addDeviceModal = document.getElementById('add-device-modal');
+            addDeviceModal.classList.remove('hidden');
+        });
+
+        document.getElementById('cancel-add-device').addEventListener('click', function () {
+            const addDeviceModal = document.getElementById('add-device-modal');
+            addDeviceModal.classList.add('hidden');
+        });
+
+        document.getElementById('add-device-form').addEventListener('submit', function (event) {
+            event.preventDefault();
+            showLoader();
+
+            const deviceId = document.getElementById('device-id').value;
+            const deviceName = document.getElementById('device-name').value;
+            const deviceType = document.getElementById('device-type').value;
+            const deviceDescription = document.getElementById('device-description').value;
+
+            fetch('/register-device', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    device_id: deviceId,
+                    device_name: deviceName,
+                    device_type: deviceType,
+                    device_description: deviceDescription
+                })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    hideLoader();
+                    if (data.error) {
+                        showError(`Failed to add device: ${data.error}`);
+                    } else {
+                        showSuccess('Device added successfully.');
+                        fetchDevices();
+                        fetchOverallStats();
+
+                    }
+                })
+                .catch(error => {
+                    hideLoader();
+                    showError('An error occurred. Please try again.');
+                });
+        });
+
+        function deleteDevice(deviceId) {
+            showLoader();
+            fetch('/delete-device', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ device_id: deviceId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                hideLoader();
+                if (data.error) {
+                    showError(`Failed to delete device: ${data.error}`);
+                } else {
+                    fetchOverallStats();
+                    showSuccess('Device deleted successfully.');
+                    fetchDevices();
+                }
+            })
+            .catch(error => {
+                hideLoader();
+                showError('An error occurred. Please try again.');
+            });
+        }
+
+        function fetchOverallStats() {
+            fetch('/overall-stats')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        showError(data.error);
+                    } else {
+                        document.getElementById('total-devices').textContent = data.total_devices;
+                        document.getElementById('active-devices').textContent = data.active_devices;
+                        document.getElementById('inactive-devices').textContent = data.inactive_devices;
+                    }
+                })
+                .catch(error => {
+                    showError('An error occurred while fetching overall stats.');
+                });
+        }
+
+        // Fetch overall stats on page load and every 5 minutes
+        fetchOverallStats();
+        setInterval(fetchOverallStats, 5 * 60 * 1000);
+
+        // Fetch devices on page load and every 5 minutes
+        fetchDevices();
+        setInterval(fetchDevices, 5 * 60 * 1000);
+    </script>
+
+<script>
+function startMultiStepTour(steps) {
+    document.addEventListener('DOMContentLoaded', function() {
+        // Define the tour steps
+        var tourSteps = steps.map(step => {
+            return {
+                target: step.targetId,
+                title: step.title,
+                content: step.content,
+                placement: step.placement || 'bottom', // Default to 'bottom' if no placement is provided
+            };
+        });
+
+        var tour = {
+            id: "multi-step-tour",
+            steps: tourSteps,
+            showPrevButton: true,
+            scrollTopMargin: 100
+        };
+
+        // Start the tour
+        hopscotch.startTour(tour);
+
+        // Scroll to the first target element to bring it into view
+        if (steps.length > 0) {
+            document.getElementById(steps[0].targetId).scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    });
+}
+
+// Example usage
+startMultiStepTour([
+    {
+        targetId: 'add-device-btn',
+        title: 'Add New Device',
+        content: 'To add a new IoT device to your dashboard, click on this button.',
+        placement: 'left'
+    },
+    {
+        targetId: 'total-devices',
+        title: 'Total Devices',
+        content: 'This shows the total number of devices you have added.',
+        placement: 'bottom'
+    },
+    {
+        targetId: 'active-devices',
+        title: 'Active Devices',
+        content: 'This shows the number of active devices.',
+        placement: 'bottom'
+    },
+    {
+        targetId: 'inactive-devices',
+        title: 'Inactive Devices',
+        content: 'This shows the number of inactive devices or devices that have not recieved data since the last 30+ days.',
+        placement: 'bottom'
+    },
+    {
+        targetId: 'device-cards',
+        title: 'Device Cards',
+        content: 'All your added devices are shown here. You can click on any Device Card to enter into the device dashboard.',
+        placement: 'top'
+    }
+    
+]);
+
+
+</script>
+
+
+    
+</body>
+
+</html>

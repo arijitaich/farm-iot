@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login & Signup</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        .hidden {
+            display: none;
+        }
+
+        .loader {
+            border-top-color: transparent;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-gray-900 flex items-center justify-center min-h-screen text-gray-200">
+    <div class="bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-md">
+        <div id="toggle-section" class="text-center mb-6">
+            <button id="login-toggle" class="text-blue-500 font-semibold">Login</button>
+            <span class="text-gray-400">|</span>
+            <button id="signup-toggle" class="text-gray-400">Signup</button>
+        </div>
+
+        <form id="login-form" class="space-y-4">
+            <div>
+                <label for="login-email" class="block text-gray-400">Email</label>
+                <input type="email" id="login-email" class="w-full p-2 border border-gray-700 bg-gray-700 rounded mt-1 text-gray-200" required>
+            </div>
+            <div>
+                <label for="login-password" class="block text-gray-400">Password</label>
+                <input type="password" id="login-password" class="w-full p-2 border border-gray-700 bg-gray-700 rounded mt-1 text-gray-200" required>
+            </div>
+            <div class="text-right">
+                <button type="button" id="forgot-password" class="text-blue-500">Forgot Password?</button>
+            </div>
+            <div>
+                <button type="submit" class="w-full bg-blue-500 text-white p-2 rounded">Login</button>
+            </div>
+        </form>
+
+        <form id="signup-form" class="space-y-4 hidden">
+            <div>
+                <label for="signup-email" class="block text-gray-400">Email</label>
+                <input type="email" id="signup-email" class="w-full p-2 border border-gray-700 bg-gray-700 rounded mt-1 text-gray-200" required>
+            </div>
+            <div>
+                <label for="signup-password" class="block text-gray-400">Password</label>
+                <input type="password" id="signup-password" class="w-full p-2 border border-gray-700 bg-gray-700 rounded mt-1 text-gray-200" required>
+            </div>
+            <div>
+                <label for="signup-repassword" class="block text-gray-400">Re-enter Password</label>
+                <input type="password" id="signup-repassword" class="w-full p-2 border border-gray-700 bg-gray-700 rounded mt-1 text-gray-200" required>
+            </div>
+            <div>
+                <button type="submit" class="w-full bg-green-500 text-white p-2 rounded">Signup</button>
+            </div>
+        </form>
+
+        <!-- Error Modal -->
+        <div id="error-modal" class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 hidden">
+            <div class="bg-white p-6 rounded-lg shadow-lg w-80">
+                <div class="flex items-center">
+                    <svg class="h-6 w-6 text-red-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-12.728 12.728m12.728 0L5.636 5.636" />
+                    </svg>
+                    <h3 class="text-lg font-semibold text-gray-900">Error</h3>
+                </div>
+                <div id="error-message" class="mt-4 text-gray-700"></div>
+                <div class="mt-6 text-right">
+                    <button id="error-modal-close" class="bg-red-500 text-white px-4 py-2 rounded">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Forgot Password Modal -->
+        <div id="forgot-password-modal" class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 hidden">
+            <div class="bg-white p-6 rounded-lg shadow-lg w-80">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-lg font-semibold text-gray-900">Forgot Password</h3>
+                    <button id="forgot-password-modal-close" class="text-gray-400">&times;</button>
+                </div>
+                <div class="mt-4">
+                    <label for="forgot-password-email" class="block text-gray-700">Email</label>
+                    <input type="email" id="forgot-password-email" class="w-full p-2 border border-gray-300 rounded mt-1" required>
+                </div>
+                <div class="mt-6 text-right">
+                    <button id="forgot-password-submit" class="bg-blue-500 text-white px-4 py-2 rounded">Submit</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loader Modal -->
+        <div id="loader-modal" class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 hidden">
+            <div class="flex flex-col items-center">
+                <div class="loader border-4 border-blue-500"></div>
+                <p class="text-white mt-4">Please Wait...</p>
+            </div>
+        </div>
+    </div>
+
+
+    <div id="success-modal" class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 hidden">
+        <div class="bg-white p-6 rounded-lg shadow-lg w-80">
+            <div class="flex items-center">
+                <svg class="h-6 w-6 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 3h.01m-6.938 2a9 9 0 1113.856 0H5.062z" />
+                </svg>
+                <h3 class="text-lg font-semibold text-gray-900">Registration Completed</h3>
+            </div>
+            <div class="mt-4 text-gray-700">
+                Registration Completed Successfully. Please login to access your dashboard.
+            </div>
+            <div class="mt-6 text-right">
+                <button id="success-modal-close" class="bg-green-500 text-white px-4 py-2 rounded">Close</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Toggle between login and signup forms
+        document.getElementById('login-toggle').addEventListener('click', function() {
+            document.getElementById('login-form').classList.remove('hidden');
+            document.getElementById('signup-form').classList.add('hidden');
+            document.getElementById('login-toggle').classList.add('text-blue-500', 'font-semibold');
+            document.getElementById('signup-toggle').classList.remove('text-blue-500', 'font-semibold');
+            document.getElementById('signup-toggle').classList.add('text-gray-400');
+        });
+
+        document.getElementById('signup-toggle').addEventListener('click', function() {
+            document.getElementById('signup-form').classList.remove('hidden');
+            document.getElementById('login-form').classList.add('hidden');
+            document.getElementById('signup-toggle').classList.add('text-blue-500', 'font-semibold');
+            document.getElementById('login-toggle').classList.remove('text-blue-500', 'font-semibold');
+            document.getElementById('login-toggle').classList.add('text-gray-400');
+        });
+
+        // Show error modal
+        function showError(message) {
+            const errorMessage = document.getElementById('error-message');
+            errorMessage.textContent = message;
+            const errorModal = document.getElementById('error-modal');
+            errorModal.classList.remove('hidden');
+        }
+
+        // Close error modal
+        document.getElementById('error-modal-close').addEventListener('click', function() {
+            const errorModal = document.getElementById('error-modal');
+            errorModal.classList.add('hidden');
+        });
+
+        // Show loader
+        function showLoader() {
+            const loaderModal = document.getElementById('loader-modal');
+            loaderModal.classList.remove('hidden');
+        }
+
+        // Hide loader
+        function hideLoader() {
+            const loaderModal = document.getElementById('loader-modal');
+            loaderModal.classList.add('hidden');
+        }
+
+        // Validate email format
+        function validateEmail(email) {
+            const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return re.test(email);
+        }
+
+        // Validate password strength
+        function validatePassword(password) {
+            const re = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*()_+=-])[A-Za-z\d!@#$%^&*()_+=-]{8,}$/;
+            return re.test(password);
+        }
+
+        // Login form submission
+        document.getElementById('login-form').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            showLoader();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+
+            if (!validateEmail(email)) {
+                hideLoader();
+                showError('Invalid email format.');
+                return;
+            }
+
+            try {
+                const response = await fetch('/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const result = await response.json();
+                hideLoader();
+                if (response.ok) {
+                    window.location.href = '/dashboard';
+                } else {
+                    showError(result.error);
+                }
+            } catch (error) {
+                hideLoader();
+                showError('An error occurred. Please try again.');
+            }
+        });
+
+        // Signup form submission
+        document.getElementById('signup-form').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            showLoader();
+            const email = document.getElementById('signup-email').value;
+            const password = document.getElementById('signup-password').value;
+            const rePassword = document.getElementById('signup-repassword').value;
+
+            if (!validateEmail(email)) {
+                hideLoader();
+                showError('Invalid email format. Please enter a valid email address.');
+                return;
+            }
+
+            if (!validatePassword(password)) {
+                hideLoader();
+                showError('Password must be at least 8 characters long and include a letter, a number, and a special character.');
+                return;
+            }
+
+            if (password !== rePassword) {
+                hideLoader();
+                showError('Passwords do not match. Please ensure both password fields are identical.');
+                return;
+            }
+
+            try {
+                const response = await fetch('/register-user', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const result = await response.json();
+                hideLoader();
+                if (response.ok) {
+                    showSuccessModal();
+                } else {
+                    if (result.error) {
+                        showError(`Signup failed: ${result.error} - ${result.details || ''}`);
+
+                    } else {
+                        showError('Signup failed due to an unknown error. Please try again.');
+                    }
+                }
+            } catch (error) {
+                hideLoader();
+                showError(`An error occurred while processing your request: ${error.message}`);
+            }
+        });
+
+        // Show forgot password modal
+        document.getElementById('forgot-password').addEventListener('click', function() {
+            const forgotPasswordModal = document.getElementById('forgot-password-modal');
+            forgotPasswordModal.classList.remove('hidden');
+        });
+
+        // Close forgot password modal
+        document.getElementById('forgot-password-modal-close').addEventListener('click', function() {
+            const forgotPasswordModal = document.getElementById('forgot-password-modal');
+            forgotPasswordModal.classList.add('hidden');
+        });
+
+        // Forgot password submission
+        document.getElementById('forgot-password-submit').addEventListener('click', async function() {
+            showLoader();
+            const email = document.getElementById('forgot-password-email').value;
+
+            if (!validateEmail(email)) {
+                hideLoader();
+                showError('Invalid email format.');
+                return;
+            }
+
+            try {
+                const response = await fetch('/forgot-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                hideLoader();
+                alert('A password reset link has been sent to this email id if the user exists.');
+                const forgotPasswordModal = document.getElementById('forgot-password-modal');
+                forgotPasswordModal.classList.add('hidden');
+            } catch (error) {
+                hideLoader();
+                showError('An error occurred. Please try again.');
+            }
+        });
+        
+        function checkUrlForSignupComplete() {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('tag') === 'signup_complete') {
+                
+            }
+        }
+
+        function showSuccessModal() {
+            const modal = document.getElementById('success-modal');
+            modal.classList.remove('hidden');
+
+            const closeModalButton = document.getElementById('success-modal-close');
+            closeModalButton.addEventListener('click', function() {
+                modal.classList.add('hidden');
+                document.getElementById('login-toggle').click(); // Simulate a click on the login-toggle element
+            });
+        }
+
+        // Run the check when the page loads
+        // window.onload = checkUrlForSignupComplete;
+
+    </script>
+</body>
+
+</html>

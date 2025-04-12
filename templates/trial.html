@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fetch Notifications</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        function fetchNotifications(device_id) {
+            const token = localStorage.getItem('token'); // Retrieve the token from local storage
+            console.log('Fetching notifications for device_id:', device_id); // Log the device ID
+            console.log('Using token:', token); // Log the token being used
+            
+            $.ajax({
+                url: `/get-notifications/${device_id}`,
+                type: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                success: function(data) {
+                    console.log('Raw response:', JSON.stringify(data)); // Log the raw response string
+                },
+                error: function(jqXHR, textStatus, errorThrown) {
+                    console.error('Error fetching notifications:', textStatus, errorThrown);
+                }
+            });
+        }
+
+        // Example usage
+        $(document).ready(function() {
+            fetchNotifications('26041990');
+        });
+    </script>
+</head>
+<body>
+</body>
+</html>
