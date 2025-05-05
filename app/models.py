@@ -20,6 +20,7 @@ class Device(db.Model):
     device_name = db.Column(db.String(255))
     device_type = db.Column(db.String(255))
     device_description = db.Column(db.Text)
+    device_coordinates = db.Column(db.String(255))  # New field to store coordinates
     registered_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class SensorData(db.Model):
