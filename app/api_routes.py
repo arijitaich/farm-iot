@@ -11,7 +11,6 @@ from .jwt_utils import encode_token
 from .models import User, db
 from flask import session
 from functools import wraps
-from werkzeug.security import safe_str_cmp  # For secure string comparison
 from sqlalchemy.exc import IntegrityError  # To handle database integrity errors
 from .models import Device  # Assuming a Device model exists
 
