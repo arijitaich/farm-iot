@@ -75,11 +75,23 @@ def register_user():
 @login_required
 def get_devices():
     email = session['user_email']
-    # Dummy response for now, or pull devices from DB
-    return jsonify({
-        'devices': [],
-        'message': f'Devices for {email}'
-    })
+    try:
+        # Fetch devices from the database
+        devices = Device.query.all()  # Modify this query if devices are linked to users
+        device_list = [
+            {
+                'device_id': device.device_id,
+                'device_name': device.device_name,
+                'device_type': device.device_type,
+                'device_description': device.device_description,
+                'device_coordinates': device.device_coordinates,
+                'registered_at': device.registered_at.isoformat()
+            }
+            for device in devices
+        ]
+        return jsonify({'devices': device_list, 'message': f'Devices for {email}'})
+    except Exception as e:
+        return jsonify({'error': 'Failed to fetch devices', 'details': str(e)}), 500
 
 
 @api_bp.route('/logout', methods=['POST'])
