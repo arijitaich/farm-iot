@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template
+from flask import Blueprint, render_template, request, jsonify
 from .jwt_utils import login_required, token_required
 
 frontend_bp = Blueprint('frontend', __name__)
@@ -18,6 +18,7 @@ def profile_settings():
     return render_template("profile_settings.html")
 
 @frontend_bp.route('/device_view/<device_id>')
-@token_required
+@login_required  # Use session-based authentication
 def device_view(device_id):
+    # Remove token checks since session is used
     return render_template("device_view.html", device=[device_id, "Mock Device", "Type A", "Demo Description"], data_points={"temp": 25, "volt": 3.7})
