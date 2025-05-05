@@ -23,7 +23,7 @@ class Device(db.Model):
     device_description = db.Column(db.Text)
     device_coordinates = db.Column(db.String(255))  # New field to store coordinates
     registered_at = db.Column(db.DateTime, default=datetime.utcnow)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)  # Add this foreign key
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)  # Foreign key to link to the user
 
 class SensorData(db.Model):
     id = db.Column(db.Integer, primary_key=True)

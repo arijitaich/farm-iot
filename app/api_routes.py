@@ -126,21 +126,27 @@ def register_device():
         if existing_device:
             return jsonify({'error': 'Device ID already exists'}), 409
 
+        # Get the logged-in user's ID
+        user = User.query.filter_by(email=session['user_email']).first()
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+
         # Create and save the new device
         new_device = Device(
             device_id=device_id,
             device_name=device_name.strip(),
             device_type=device_type.strip(),
             device_description=device_description.strip(),
-            device_coordinates=device_coordinates.strip()
+            device_coordinates=device_coordinates.strip(),
+            user_id=user.id  # Set the user_id to the logged-in user's ID
         )
         db.session.add(new_device)
         db.session.commit()
 
         return jsonify({'message': 'Device registered successfully'}), 201
-    except IntegrityError:
+    except IntegrityError as e:
         db.session.rollback()
-        return jsonify({'error': 'Database integrity error'}), 500
+        return jsonify({'error': 'Database integrity error', 'details': str(e.orig)}), 500
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': 'An unexpected error occurred', 'details': str(e)}), 500
