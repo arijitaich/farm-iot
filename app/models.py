@@ -7,6 +7,7 @@ class User(db.Model):
     email = db.Column(db.String(255), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    devices = db.relationship('Device', backref='owner', lazy=True)  # Add this relationship
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -22,6 +23,7 @@ class Device(db.Model):
     device_description = db.Column(db.Text)
     device_coordinates = db.Column(db.String(255))  # New field to store coordinates
     registered_at = db.Column(db.DateTime, default=datetime.utcnow)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)  # Add this foreign key
 
 class SensorData(db.Model):
     id = db.Column(db.Integer, primary_key=True)

@@ -1,5 +1,6 @@
-from flask import Blueprint, render_template, request, jsonify
+from flask import Blueprint, render_template, request, jsonify, session
 from .jwt_utils import login_required, token_required
+from .models import Device, User
 
 frontend_bp = Blueprint('frontend', __name__)
 
@@ -20,5 +21,25 @@ def profile_settings():
 @frontend_bp.route('/device_view/<device_id>')
 @login_required  # Use session-based authentication
 def device_view(device_id):
-    # Remove token checks since session is used
-    return render_template("device_view.html", device=[device_id, "Mock Device", "Type A", "Demo Description"], data_points={"temp": 25, "volt": 3.7})
+    email = session.get('user_email')  # Get the logged-in user's email
+    try:
+        # Fetch the device from the database
+        device = Device.query.filter_by(device_id=device_id).first()
+
+        # Check if the device exists
+        if not device:
+            return jsonify({'error': 'Device not found'}), 404
+
+        # Check if the device belongs to the logged-in user
+        user = User.query.filter_by(email=email).first()
+        if not user or device not in user.devices:  # Assuming a relationship exists
+            return jsonify({'error': 'Unauthorized access to this device'}), 403
+
+        # Pass the device data to the template
+        return render_template(
+            "device_view.html",
+            device=[device.device_id, device.device_name, device.device_type, device.device_description],
+            data_points=device.data_points  # Assuming `data_points` is a property or column
+        )
+    except Exception as e:
+        return jsonify({'error': 'An error occurred', 'details': str(e)}), 500
