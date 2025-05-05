@@ -13,6 +13,7 @@ from flask import session
 from functools import wraps
 from sqlalchemy.exc import IntegrityError  # To handle database integrity errors
 from .models import Device  # Assuming a Device model exists
+from .models import SensorData  # Import SensorData model
 
 
 api_bp = Blueprint('api', __name__)
@@ -150,3 +151,34 @@ def register_device():
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': 'An unexpected error occurred', 'details': str(e)}), 500
+
+
+@api_bp.route('/store-sensor-data', methods=['POST'])
+def store_sensor_data():
+    req = request.json
+    device_id = req.get('device_id')
+    data = req.get('data')  # Sensor data should be a JSON object
+
+    # Validate mandatory fields
+    if not device_id or not data:
+        return jsonify({'error': 'Missing device_id or data'}), 400
+
+    try:
+        # Check if the device exists
+        device = Device.query.filter_by(device_id=device_id).first()
+        if not device:
+            return jsonify({'error': 'Device not found'}), 404
+
+        # Create a new SensorData record
+        new_sensor_data = SensorData(
+            device_id=device_id,
+            timestamp=datetime.utcnow(),
+            data=data
+        )
+        db.session.add(new_sensor_data)
+        db.session.commit()
+
+        return jsonify({'message': 'Sensor data stored successfully'}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'An error occurred', 'details': str(e)}), 500
