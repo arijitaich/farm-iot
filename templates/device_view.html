@@ -1504,12 +1504,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 showError('Error fetching device data: ' + error.message);
             });
         });
+    } else {
+        console.error('Element with ID "all-data-tab" not found.');
     }
 
     // Automatically load all device data when the page loads
-    const allDataTabAutoClick = document.getElementById('all-data-tab');
-    if (allDataTabAutoClick) {
-        allDataTabAutoClick.click();
+    if (allDataTab) {
+        allDataTab.click();
     }
 });
 
