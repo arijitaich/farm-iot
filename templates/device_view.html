@@ -197,34 +197,26 @@
 
                 <!-- Additional Block (Width 4) -->
                 <div class="col-span-12 md:col-span-4 space-y-6">
-                    <!-- All Device Data Block -->
+                    <!-- New Section: All Device Data -->
                     <div class="bg-gray-800 p-6 rounded-lg shadow-lg text-white">
                         <h2 class="text-2xl font-semibold mb-4">All Device Data</h2>
-                        <div id="all-device-data" class="overflow-auto max-h-96 space-y-4">
-                            <!-- Data will be dynamically added here -->
+                        <div class="overflow-auto max-h-96">
+                            <table class="min-w-full text-white">
+                                <thead>
+                                    <tr class="bg-gray-700">
+                                        <th class="px-4 py-2">Time</th>
+                                        <th class="px-4 py-2">Parameters</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="device-data-table" class="bg-gray-600">
+                                    <!-- Data will be dynamically added here -->
+                                </tbody>
+                            </table>
                         </div>
                     </div>
 
                     <!-- Device Webhook Block -->
                     <div class="bg-gray-800 p-6 rounded-lg shadow-lg text-white">
-                        <h2 class="text-2xl font-semibold mb-4">Device Webhook</h2>
-                        <p id="device-webhook-url" class="break-words mb-4">
-                            http://iot.mygreenqube.com:5000/data?device_id=26041990&temperature=25&humidity=60&pressure=1013
-                        </p>
-                        <button id="send-demo-data-btn" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">
-                            Send Demo Device Data
-                        </button>
-                    </div>
-                    
-                    
-                    
-                    
-
-                    <!-- Tabs Block -->
-                    <div class="bg-gray-800 p-6 rounded-lg shadow-lg ">
-                        <h2 class="text-2xl font-semibold mb-4 text-white">Device Management</h2>
-                        <div class="flex flex-col space-y-4">
-                            <!-- Tabs Navigation -->
                             <nav class="flex space-x-4 mb-4">
                                 <button id="alerts-tab" class="bg-blue-500 text-white px-4 py-2 rounded active-tab text-white">Alerts</button>
 
@@ -445,7 +437,7 @@ document.addEventListener('DOMContentLoaded', () => {
         .then(data => {
             if (data && data.parameters) {
                 fetchDeviceCharts(deviceId);
-                // generateChartsForDevice(deviceId);
+                generateChartsForDevice(deviceId);
                 fetchAlerts(deviceId);
                 populateParams(data.parameters); // Assume the parameters are part of the device data response
             } else {
@@ -596,7 +588,7 @@ document.getElementById('add-data-chart-form').addEventListener('submit', functi
                 } else 
                 {
                     fetchDeviceCharts(deviceId);
-                    // generateChartsForDevice(deviceId);
+                    generateChartsForDevice(deviceId);
                     document.getElementById('add-data-chart-modal').classList.add('hidden');
                 }
             })
@@ -700,8 +692,8 @@ document.getElementById('cancel-delete').addEventListener('click', () => {
         setInterval(() => {
             const deviceId = getDeviceIdFromUrl();
             fetchDeviceData(deviceId);
-            // fetchDeviceCharts(deviceId);
-            // generateChartsForDevice(deviceId);
+            fetchDeviceCharts(deviceId);
+            generateChartsForDevice(deviceId);
         }, 5 * 60 * 1000);
     
         
@@ -891,7 +883,21 @@ function updateChartsPeriodically() {
             document.getElementById('data-feed-content').classList.remove('hidden');
         });
     
-       
+        // Fetch and update device data
+        function fetchDeviceData(deviceId) {
+            return fetch(`/device_data/${deviceId}`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('device-name').textContent = data.device_name;
+                    document.getElementById('device-details').innerHTML = `${data.device_id}<br>${data.device_type}<br>${data.device_description}`;
+                    updateDeviceDataPoints(data.data_points);
+                    populateYAxisParams(data.data_points, 'y-axis-params');
+                    populateXAxisParams(data.data_points, 'x-axis-params');
+                    updateDeviceWebhook(data.device_id, data.data_points);
+                    populateAlertParameters(data.data_points);
+                })
+                .catch(error => console.error('Error fetching device data:', error));
+        }
     
         // Update device webhook URL
         function updateDeviceWebhook(deviceId, dataPoints) {
@@ -1110,24 +1116,24 @@ function fetchDeviceData(deviceId) {
 }
 
 function fetchDeviceCharts(deviceId) {
-    // return fetch(`/get-charts/${deviceId}`)
-    //     .then(response => {
-    //         if (!response.ok) {
-    //             throw new Error('Network response was not ok');
-    //         }
-    //         return response.json();
-    //     })
-    //     .then(data => {
-    //         if (data.error) {
-    //             showError(data.error);
-    //         } else {
-    //             updateDeviceCharts(data.charts);
-    //         }
-    //     })
-    //     .catch(error => {
-    //         console.error('There was a problem with the fetch operation:', error);
-    //         // showError('An error occurred while fetching charts.');
-    //     });
+    return fetch(`/get-charts/${deviceId}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.error) {
+                showError(data.error);
+            } else {
+                updateDeviceCharts(data.charts);
+            }
+        })
+        .catch(error => {
+            console.error('There was a problem with the fetch operation:', error);
+            // showError('An error occurred while fetching charts.');
+        });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -1355,7 +1361,7 @@ function generateChartsForDevice(deviceId) {
 // Call the function with a valid deviceId
 document.addEventListener('DOMContentLoaded', () => {
     const deviceId = getDeviceIdFromUrl();
-    // generateChartsForDevice(deviceId);
+    generateChartsForDevice(deviceId);
 });
 
 document.getElementById('all-data-tab').addEventListener('click', function () {
@@ -1506,60 +1512,6 @@ document.addEventListener('DOMContentLoaded', function () {
     if (allDataTab) {
         allDataTab.click();
     }
-});
-
-document.addEventListener('DOMContentLoaded', function () {
-    const deviceId = getDeviceIdFromUrl();
-
-    // Fetch and display all device data in the new section
-    fetch(`/get-all-device-data/${deviceId}`, {
-        headers: {
-            'Authorization': 'Bearer ' + localStorage.getItem('token')
-        }
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-    })
-    .then(data => {
-        const allDeviceDataContainer = document.getElementById('all-device-data');
-        if (allDeviceDataContainer) {
-            allDeviceDataContainer.innerHTML = '';
-            if (Array.isArray(data)) {
-                // Sort data in descending order by time
-                data.sort((a, b) => new Date(b.time) - new Date(a.time));
-
-                data.forEach(record => {
-                    const recordDiv = document.createElement('div');
-                    recordDiv.className = 'bg-gray-700 p-4 rounded-lg shadow';
-
-                    // Add time
-                    const timeDiv = document.createElement('div');
-                    timeDiv.className = 'text-sm text-gray-400 mb-2';
-                    timeDiv.textContent = `Time: ${record.time}`;
-                    recordDiv.appendChild(timeDiv);
-
-                    // Add parameters
-                    const paramsDiv = document.createElement('div');
-                    paramsDiv.className = 'text-sm text-gray-300';
-                    paramsDiv.textContent = Object.entries(record.data)
-                        .map(([key, value]) => `${key}: ${value}`)
-                        .join(', ');
-                    recordDiv.appendChild(paramsDiv);
-
-                    allDeviceDataContainer.appendChild(recordDiv);
-                });
-            } else {
-                console.error('Data is not an array:', data);
-            }
-        }
-    })
-    .catch(error => {
-        console.error('Error fetching all device data:', error);
-        showError('Error fetching device data: ' + error.message);
-    });
 });
 
     </script>
