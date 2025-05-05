@@ -11,6 +11,9 @@ from .jwt_utils import encode_token
 from .models import User, db
 from flask import session
 from functools import wraps
+from werkzeug.security import safe_str_cmp  # For secure string comparison
+from sqlalchemy.exc import IntegrityError  # To handle database integrity errors
+from .models import Device  # Assuming a Device model exists
 
 
 api_bp = Blueprint('api', __name__)
@@ -22,10 +25,11 @@ AES_KEY = os.getenv("AES_KEY").encode()
 def pad(s): return s + (16 - len(s) % 16) * ' '
 
 def decrypt_data(encrypted_text):
-    cipher = AES.new(AES_KEY, AES.MODE_ECB)
     decoded = base64.b64decode(encrypted_text)
-    decrypted = cipher.decrypt(decoded)
-    return decrypted.decode().strip()
+    iv = decoded[:16]  # Extract the first 16 bytes as the IV
+    cipher = AES.new(AES_KEY, AES.MODE_CBC, iv)
+    decrypted = cipher.decrypt(decoded[16:])  # Decrypt the remaining bytes
+    return decrypted.decode().rstrip('\x00')  # Remove padding
 
 @api_bp.route('/data', methods=['GET'])
 def ingest_data():
@@ -112,3 +116,49 @@ def get_devices():
 def logout():
     session.clear()
     return jsonify({'message': 'Logged out'})
+
+
+@api_bp.route('/register-device', methods=['POST'])
+@login_required
+def register_device():
+    req = request.json
+    device_id = req.get('device_id')
+    device_name = req.get('device_name')
+    device_type = req.get('device_type')
+    device_description = req.get('device_description', '')  # Optional field
+    device_coordinates = req.get('device_coordinates')  # New field
+
+    # Validate mandatory fields
+    if not device_id or not device_name or not device_type or not device_coordinates:
+        return jsonify({'error': 'Missing mandatory fields'}), 400
+
+    # Sanitize and validate inputs
+    if not device_id.isdigit():
+        return jsonify({'error': 'Device ID must contain only numbers'}), 400
+    if len(device_name) > 125 or len(device_type) > 125:
+        return jsonify({'error': 'Device Name and Type must be less than 125 characters'}), 400
+
+    try:
+        # Check for duplicate Device ID
+        existing_device = Device.query.filter_by(device_id=device_id).first()
+        if existing_device:
+            return jsonify({'error': 'Device ID already exists'}), 409
+
+        # Create and save the new device
+        new_device = Device(
+            device_id=device_id,
+            device_name=device_name.strip(),
+            device_type=device_type.strip(),
+            device_description=device_description.strip(),
+            device_coordinates=device_coordinates.strip()
+        )
+        db.session.add(new_device)
+        db.session.commit()
+
+        return jsonify({'message': 'Device registered successfully'}), 201
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({'error': 'Database integrity error'}), 500
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'An unexpected error occurred', 'details': str(e)}), 500
