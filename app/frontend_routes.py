@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, jsonify, session
 from .jwt_utils import login_required, token_required
-from .models import Device, User
+from .models import Device, User, SensorData
 
 frontend_bp = Blueprint('frontend', __name__)
 
@@ -35,11 +35,17 @@ def device_view(device_id):
         if not user or device not in user.devices:  # Assuming a relationship exists
             return jsonify({'error': 'Unauthorized access to this device'}), 403
 
+        # Fetch the latest data points for the device
+        data_points = {}
+        latest_sensor_data = SensorData.query.filter_by(device_id=device_id).order_by(SensorData.timestamp.desc()).first()
+        if latest_sensor_data:
+            data_points = latest_sensor_data.data
+
         # Pass the device data to the template
         return render_template(
             "device_view.html",
             device=[device.device_id, device.device_name, device.device_type, device.device_description],
-            data_points=device.data_points  # Assuming `data_points` is a property or column
+            data_points=data_points
         )
     except Exception as e:
         return jsonify({'error': 'An error occurred', 'details': str(e)}), 500

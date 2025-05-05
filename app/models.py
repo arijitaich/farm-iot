@@ -24,10 +24,11 @@ class Device(db.Model):
     device_coordinates = db.Column(db.String(255))  # New field to store coordinates
     registered_at = db.Column(db.DateTime, default=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)  # Foreign key to link to the user
+    sensor_data = db.relationship('SensorData', backref='device', lazy=True)  # Add this relationship
 
 class SensorData(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    device_id = db.Column(db.String(255), nullable=False)
+    device_id = db.Column(db.String(255), db.ForeignKey('device.device_id'), nullable=False)
     timestamp = db.Column(db.DateTime, nullable=False)
     data = db.Column(db.JSON)  # Store all parameters dynamically
 
