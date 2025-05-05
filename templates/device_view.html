@@ -1526,7 +1526,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const deviceId = getDeviceIdFromUrl();
 
     // Fetch and display all device data in the new section
-    fetch(`/device_data_all/${deviceId}`, {
+    fetch(`/get-all-device-data/${deviceId}`, {
         headers: {
             'Authorization': 'Bearer ' + localStorage.getItem('token')
         }
