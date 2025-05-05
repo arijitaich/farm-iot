@@ -182,3 +182,20 @@ def store_sensor_data():
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': 'An error occurred', 'details': str(e)}), 500
+
+
+@api_bp.route('/get-all-device-data/<device_id>', methods=['GET'])
+def get_all_device_data(device_id):
+    try:
+        # Fetch all sensor data for the device
+        records = SensorData.query.filter_by(device_id=device_id).order_by(SensorData.timestamp.desc()).all()
+        data_list = [
+            {
+                'timestamp': record.timestamp.isoformat(),
+                'data': record.data
+            }
+            for record in records
+        ]
+        return jsonify({'records': data_list})
+    except Exception as e:
+        return jsonify({'error': 'Failed to fetch device data', 'details': str(e)}), 500
