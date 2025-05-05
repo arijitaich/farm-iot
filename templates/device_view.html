@@ -445,7 +445,7 @@ document.addEventListener('DOMContentLoaded', () => {
         .then(data => {
             if (data && data.parameters) {
                 fetchDeviceCharts(deviceId);
-                generateChartsForDevice(deviceId);
+                // generateChartsForDevice(deviceId);
                 fetchAlerts(deviceId);
                 populateParams(data.parameters); // Assume the parameters are part of the device data response
             } else {
@@ -596,7 +596,7 @@ document.getElementById('add-data-chart-form').addEventListener('submit', functi
                 } else 
                 {
                     fetchDeviceCharts(deviceId);
-                    generateChartsForDevice(deviceId);
+                    // generateChartsForDevice(deviceId);
                     document.getElementById('add-data-chart-modal').classList.add('hidden');
                 }
             })
@@ -700,8 +700,8 @@ document.getElementById('cancel-delete').addEventListener('click', () => {
         setInterval(() => {
             const deviceId = getDeviceIdFromUrl();
             fetchDeviceData(deviceId);
-            fetchDeviceCharts(deviceId);
-            generateChartsForDevice(deviceId);
+            // fetchDeviceCharts(deviceId);
+            // generateChartsForDevice(deviceId);
         }, 5 * 60 * 1000);
     
         
@@ -891,21 +891,7 @@ function updateChartsPeriodically() {
             document.getElementById('data-feed-content').classList.remove('hidden');
         });
     
-        // Fetch and update device data
-        function fetchDeviceData(deviceId) {
-            return fetch(`/device_data/${deviceId}`)
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById('device-name').textContent = data.device_name;
-                    document.getElementById('device-details').innerHTML = `${data.device_id}<br>${data.device_type}<br>${data.device_description}`;
-                    updateDeviceDataPoints(data.data_points);
-                    populateYAxisParams(data.data_points, 'y-axis-params');
-                    populateXAxisParams(data.data_points, 'x-axis-params');
-                    updateDeviceWebhook(data.device_id, data.data_points);
-                    populateAlertParameters(data.data_points);
-                })
-                .catch(error => console.error('Error fetching device data:', error));
-        }
+       
     
         // Update device webhook URL
         function updateDeviceWebhook(deviceId, dataPoints) {
@@ -1124,24 +1110,24 @@ function fetchDeviceData(deviceId) {
 }
 
 function fetchDeviceCharts(deviceId) {
-    return fetch(`/get-charts/${deviceId}`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.error) {
-                showError(data.error);
-            } else {
-                updateDeviceCharts(data.charts);
-            }
-        })
-        .catch(error => {
-            console.error('There was a problem with the fetch operation:', error);
-            // showError('An error occurred while fetching charts.');
-        });
+    // return fetch(`/get-charts/${deviceId}`)
+    //     .then(response => {
+    //         if (!response.ok) {
+    //             throw new Error('Network response was not ok');
+    //         }
+    //         return response.json();
+    //     })
+    //     .then(data => {
+    //         if (data.error) {
+    //             showError(data.error);
+    //         } else {
+    //             updateDeviceCharts(data.charts);
+    //         }
+    //     })
+    //     .catch(error => {
+    //         console.error('There was a problem with the fetch operation:', error);
+    //         // showError('An error occurred while fetching charts.');
+    //     });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -1369,7 +1355,7 @@ function generateChartsForDevice(deviceId) {
 // Call the function with a valid deviceId
 document.addEventListener('DOMContentLoaded', () => {
     const deviceId = getDeviceIdFromUrl();
-    generateChartsForDevice(deviceId);
+    // generateChartsForDevice(deviceId);
 });
 
 document.getElementById('all-data-tab').addEventListener('click', function () {
