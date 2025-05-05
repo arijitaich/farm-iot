@@ -195,20 +195,24 @@
             <h2 class="text-xl font-semibold mb-4" style="color: black;">Add New Device</h2>
             <form id="add-device-form">
                 <div class="mb-4">
-                    <label for="device-id" class="block text-gray-700">Device ID</label>
-                    <input type="text" id="device-id" name="deviceId" class="w-full px-3 py-2 border rounded-lg" placeholder="No Spaces Allowed" required>
+                    <label for="device_id" class="block text-gray-700">Device ID</label>
+                    <input type="text" id="device_id" name="device_id" class="w-full px-3 py-2 border rounded-lg" placeholder="No Spaces Allowed" required>
                 </div>
                 <div class="mb-4">
-                    <label for="device-name" class="block text-gray-700">Device Name</label>
-                    <input type="text" id="device-name" name="deviceName" class="w-full px-3 py-2 border rounded-lg" placeholder="Add Your Device name" required>
+                    <label for="device_name" class="block text-gray-700">Device Name</label>
+                    <input type="text" id="device_name" name="device_name" class="w-full px-3 py-2 border rounded-lg" placeholder="Add Your Device name" required>
                 </div>
                 <div class="mb-4">
-                    <label for="device-type" class="block text-gray-700">Device Type</label>
-                    <input type="text" id="device-type" name="deviceType" class="w-full px-3 py-2 border rounded-lg" placeholder="For e.g. Plant IoT" required>
+                    <label for="device_type" class="block text-gray-700">Device Type</label>
+                    <input type="text" id="device_type" name="device_type" class="w-full px-3 py-2 border rounded-lg" placeholder="For e.g. Plant IoT" required>
                 </div>
                 <div class="mb-4">
-                    <label for="device-description" class="block text-gray-700">Device Description</label>
-                    <textarea id="device-description" name="deviceDescription" class="w-full px-3 py-2 border rounded-lg"  placeholder="Add a short description of your device."  required></textarea>
+                    <label for="device_description" class="block text-gray-700">Device Description</label>
+                    <textarea id="device_description" name="device_description" class="w-full px-3 py-2 border rounded-lg"  placeholder="Add a short description of your device."  required></textarea>
+                </div>
+                <div class="mb-4">
+                    <label for="device_coordinates" class="block text-gray-700">Device Coordinates</label>
+                    <input type="text" id="device_coordinates" name="device_coordinates" class="w-full px-3 py-2 border rounded-lg" placeholder="Enter coordinates (e.g., 37.7749,-122.4194)" required>
                 </div>
                 <div class="flex justify-end">
                     <button type="button" id="cancel-add-device" class="bg-gray-500 text-white px-4 py-2 rounded-lg mr-2">Cancel</button>
@@ -429,10 +433,11 @@
             event.preventDefault();
             showLoader();
 
-            const deviceId = document.getElementById('device-id').value;
-            const deviceName = document.getElementById('device-name').value;
-            const deviceType = document.getElementById('device-type').value;
-            const deviceDescription = document.getElementById('device-description').value;
+            const deviceId = document.getElementById('device_id').value;
+            const deviceName = document.getElementById('device_name').value;
+            const deviceType = document.getElementById('device_type').value;
+            const deviceDescription = document.getElementById('device_description').value;
+            const deviceCoordinates = document.getElementById('device_coordinates').value;
 
             fetch('/register-device', {
                 method: 'POST',
@@ -443,7 +448,8 @@
                     device_id: deviceId,
                     device_name: deviceName,
                     device_type: deviceType,
-                    device_description: deviceDescription
+                    device_description: deviceDescription,
+                    device_coordinates: deviceCoordinates
                 })
             })
                 .then(response => response.json())
