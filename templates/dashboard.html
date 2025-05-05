@@ -456,7 +456,7 @@
                 .then(data => {
                     hideLoader();
                     if (data.error) {
-                        showError(`Failed to add device: ${data.error}`);
+                        showError(`Failed to add device: ${data.details}`);
                     } else {
                         showSuccess('Device added successfully.');
                         fetchDevices();
