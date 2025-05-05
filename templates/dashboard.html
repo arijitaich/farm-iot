@@ -360,6 +360,7 @@
             });
         }
 
+        // Ensure fetchDevices is defined before it is called
         function fetchDevices() {
             fetch('/get-devices')
                 .then(response => response.json())
@@ -374,6 +375,9 @@
                     showError('An error occurred while fetching devices.');
                 });
         }
+
+        // Call fetchDevices after defining it
+        fetchDevices();
 
         document.getElementById('logout-btn').addEventListener('click', function () {
             showLoader();
