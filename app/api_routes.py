@@ -24,35 +24,6 @@ AES_KEY = os.getenv("AES_KEY").encode()
 
 def pad(s): return s + (16 - len(s) % 16) * ' '
 
-def decrypt_data(encrypted_text):
-    decoded = base64.b64decode(encrypted_text)
-    iv = decoded[:16]  # Extract the first 16 bytes as the IV
-    cipher = AES.new(AES_KEY, AES.MODE_CBC, iv)
-    decrypted = cipher.decrypt(decoded[16:])  # Decrypt the remaining bytes
-    return decrypted.decode().rstrip('\x00')  # Remove padding
-
-@api_bp.route('/data', methods=['GET'])
-def ingest_data():
-    encrypted_payload = request.args.get('payload')
-    if not encrypted_payload:
-        return jsonify({'error': 'Missing payload'}), 400
-    try:
-        payload = json.loads(decrypt_data(encrypted_payload))
-        device_id = payload.get('device_id')
-        timestamp = payload.get('timestamp')
-        data = payload.get('data')
-        ts = datetime.fromisoformat(timestamp)
-        if abs((datetime.utcnow() - ts).total_seconds()) > 300:
-            return jsonify({'error': 'Stale timestamp'}), 400
-        q.enqueue(insert_sensor_data, {
-            'device_id': device_id,
-            'timestamp': timestamp,
-            'data': data
-        })
-        return jsonify({'status': 'accepted'})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
 @api_bp.route('/login', methods=['POST'])
 def login():
     req = request.json
