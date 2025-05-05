@@ -177,136 +177,100 @@
                 </div>
             </div>
 
-            <!-- Main Container for Device Data Points and Additional Blocks --><br>
-            <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
-                <!-- Device Data Points Card (Width 8) -->
-                <div class="col-span-12 md:col-span-8 bg-gray-800 p-6 rounded-lg shadow-lg text-white">
-                    <h2 class="text-2xl font-semibold mb-4">Device Data Points</h2>
-                    <div id="device-data-points" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {% for key, value in data_points.items() %}
-                        <div class="bg-gradient-to-r from-teal-500 to-cyan-600 p-4 rounded-lg shadow-lg text-white card-border">
-                            <h3 class="text-lg font-semibold">{{ key }}</h3>
-                            <p class="text-2xl">{{ value }}</p>
-                        </div>
-                        {% endfor %}
-                    </div>
-                    
-                </div>
-
-                
-
-                <!-- Additional Block (Width 4) -->
-                <div class="col-span-12 md:col-span-4 space-y-6">
-                    <!-- New Section: All Device Data -->
-                    <div class="bg-gray-800 p-6 rounded-lg shadow-lg text-white">
-                        <h2 class="text-2xl font-semibold mb-4">All Device Data</h2>
-                        <div class="overflow-auto max-h-96">
-                            <table class="min-w-full text-white">
-                                <thead>
-                                    <tr class="bg-gray-700">
-                                        <th class="px-4 py-2">Time</th>
-                                        <th class="px-4 py-2">Parameters</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="device-data-table" class="bg-gray-600">
-                                    <!-- Data will be dynamically added here -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- Device Webhook Block -->
-                    <div class="bg-gray-800 p-6 rounded-lg shadow-lg text-white">
-                            <nav class="flex space-x-4 mb-4">
-                                <button id="alerts-tab" class="bg-blue-500 text-white px-4 py-2 rounded active-tab text-white">Alerts</button>
-
-                                <button id="notifications-tab" class="bg-gray-700 text-white px-4 py-2 rounded inactive-tab relative">
-                                    Notifications
-                                    <span id="notification-counter" class="absolute top-0 right-0 bg-red-600 text-white rounded-full text-xs w-5 h-5 flex items-center justify-center hidden">0</span>
-                                </button>
-
-                                <button id="all-data-tab" class="bg-gray-700 text-white px-4 py-2 rounded inactive-tab">
-                                    All Device Data
-                                </button>
-                            </nav>
-
-                            <!-- Alerts Content -->
-                             <!-- Alerts Content -->
-                             <div id="alerts-content">
-                                <h3 class="text-xl font-semibold mb-2 text-white">Create Alert</h3>
-                                <form id="alert-form">
-                                    <div class="mb-4">
-                                        <label for="alert-name" class="block text-gray-400">Alert Name</label>
-                                        <input type="text" id="alert-name" class="w-full px-3 py-2 border rounded-lg" required>
-                                    </div>
-                                    <div class="mb-4">
-                                        <label for="alert-parameter" class="block text-gray-400">Parameter</label>
-                                        <select id="alert-parameter" class="w-full px-3 py-2 border rounded-lg" required>
-                                            <!-- Options will be dynamically added -->
-                                        </select>
-                                    </div>
-                                    <div class="mb-4">
-                                        <label for="alert-gate" class="block text-gray-400">Alert Logic</label>
-                                        <select id="alert-gate" name="alert_gate" class="w-full px-3 py-2 border rounded-lg" required>
-                                            <!-- Options will be dynamically added -->
-                                             <option value="Greater Than">Greater Than</option>
-                                             <option value="Less Than">Less Than</option>
-                                             <option value="Equal To">Equal to</option>
-                                        </select>
-                                    </div>
-                                    <div class="mb-4">
-                                        <label for="alert-value" class="block text-gray-400">Value</label>
-                                        <input type="number" id="alert-value" class="w-full px-3 py-2 border rounded-lg" required>
-                                    </div>
-                                    <button type="button" onClick="CreateAlert();" class="bg-blue-500 text-white px-4 py-2 rounded">Create Alert</button>
-                                </form>
-                                <h3 class="text-xl font-semibold mt-4 text-white">Alert List</h3>
-                                <ul id="alert-list" class="space-y-2">
-                                    <!-- Alerts will be dynamically added here -->
-                                </ul>
-                            </div>
-
-                            <!-- Notifications Content -->
-                            <div id="notifications-content" class="hidden">
-                                <h3 class="text-xl font-semibold mb-2 text-white">Notifications</h3>
-                                <ul id="notifications-list" class="space-y-2 text-white">
-                                    <li class="bg-gray-700 p-2 rounded">Sample Notification 1</li>
-                                    <li class="bg-gray-700 p-2 rounded">Sample Notification 2</li>
-                                    <li class="bg-gray-700 p-2 rounded">Sample Notification 3</li>
-                                </ul>
-                            </div>
-
-                            <!-- All Device Data Content -->
-                            <div id="all-data-content" class="hidden">
-                                <h3 class="text-xl font-semibold mb-2 text-white">All Device Records</h3>
-                                <div class="overflow-auto max-h-96">
-                                    <table class="min-w-full text-white">
-                                        <thead>
-                                            <tr class="bg-gray-700">
-                                                <th class="px-4 py-2">Time</th>
-                                                <th class="px-4 py-2">Parameters</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="all-data-list" class="bg-gray-600">
-                                            <!-- Data will be dynamically added here -->
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                       
-                        </div>
-                    </div>
-                </div>
+            <!-- Main Container for Device Data Points and All Records -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+    <!-- Device Data Points Card (Width 8) -->
+    <div class="col-span-12 md:col-span-8 bg-gray-800 p-6 rounded-lg shadow-lg text-white">
+        <h2 class="text-2xl font-semibold mb-4">Device Data Points</h2>
+        <div id="device-data-points" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {% for key, value in data_points.items() %}
+            <div class="bg-gradient-to-r from-teal-500 to-cyan-600 p-4 rounded-lg shadow-lg text-white card-border">
+                <h3 class="text-lg font-semibold">{{ key }}</h3>
+                <p class="text-2xl">{{ value }}</p>
             </div>
+            {% endfor %}
+        </div>
+    </div>
 
-            <!-- Device Charts Card -->
-            <div class="bg-gray-800 p-6 mt-6 rounded-lg shadow-lg text-white">
-                <h2 class="text-2xl font-semibold mb-4">Device Charts</h2>
-                <div id="device-charts" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <!-- Chart cards will be dynamically added here -->
-                </div>
-            </div>
-        </main>
+    <!-- All Device Records Section -->
+    <div class="col-span-12 bg-gray-800 p-6 rounded-lg shadow-lg text-white">
+        <h2 class="text-2xl font-semibold mb-4">All Device Records</h2>
+        <div class="overflow-auto max-h-96">
+            <table class="min-w-full text-white">
+                <thead>
+                    <tr class="bg-gray-700">
+                        <th class="px-4 py-2">Time</th>
+                        <th class="px-4 py-2">Parameters</th>
+                    </tr>
+                </thead>
+                <tbody id="device-records-table" class="bg-gray-600">
+                    <!-- Records will be dynamically added here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+// filepath: c:\xampp\htdocs\farm-iot\templates\device_view.html
+document.addEventListener('DOMContentLoaded', function () {
+    const deviceId = getDeviceIdFromUrl();
+
+    // Fetch and display all device records
+    fetch(`/get-all-device-data/${deviceId}`, {
+        headers: {
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        const recordsTable = document.getElementById('device-records-table');
+        if (recordsTable) {
+            recordsTable.innerHTML = '';
+            if (Array.isArray(data.records)) {
+                data.records.forEach(record => {
+                    const row = document.createElement('tr');
+                    row.className = 'hover:bg-gray-700';
+
+                    // Time column
+                    const timeCell = document.createElement('td');
+                    timeCell.className = 'px-4 py-2 border-b border-gray-600';
+                    timeCell.textContent = record.timestamp;
+                    row.appendChild(timeCell);
+
+                    // Parameters column
+                    const paramsCell = document.createElement('td');
+                    paramsCell.className = 'px-4 py-2 border-b border-gray-600';
+                    paramsCell.textContent = Object.entries(record.data)
+                        .map(([key, value]) => `${key}: ${value}`)
+                        .join(', ');
+                    row.appendChild(paramsCell);
+
+                    recordsTable.appendChild(row);
+                });
+            } else {
+                console.error('Records are not in an array format:', data.records);
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error fetching device records:', error);
+        alert('Error fetching device records: ' + error.message);
+    });
+});
+
+// Helper function to get the device ID from the URL
+function getDeviceIdFromUrl() {
+    const urlParts = window.location.pathname.split('/');
+    return urlParts[urlParts.length - 1];
+}
+</script>
+
     </div>
 
     <!-- Loader Modal -->
