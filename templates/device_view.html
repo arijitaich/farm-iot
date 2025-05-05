@@ -293,12 +293,6 @@
                                     </table>
                                 </div>
                             </div>
-
-                            <!-- Data Feed Content -->
-                            <div id="data-feed-content" class="hidden" hidden>
-                                <h3 class="text-xl font-semibold mb-2">Data Feed</h3>
-                                <!-- Data Feed will be dynamically added here -->
-                            </div>
                        
                         </div>
                     </div>
@@ -1384,6 +1378,9 @@ document.getElementById('all-data-tab').addEventListener('click', function () {
     document.getElementById('notifications-content').classList.add('hidden');
     document.getElementById('all-data-content').classList.remove('hidden');
 
+    // Show loader while fetching data
+    showLoader();
+
     // Fetch and display all device data
     const deviceId = getDeviceIdFromUrl();
     fetch(`/device_data_all/${deviceId}`, {
@@ -1417,8 +1414,14 @@ document.getElementById('all-data-tab').addEventListener('click', function () {
             row.appendChild(paramsCell);
             allDataList.appendChild(row);
         });
+        
+        hideLoader();
     })
-    .catch(error => console.error('Error fetching all device data:', error));
+    .catch(error => {
+        console.error('Error fetching all device data:', error);
+        hideLoader();
+        showError('Error fetching device data');
+    });
 });
 
     </script>
