@@ -1559,26 +1559,7 @@ document.getElementById('add-device-btn').addEventListener('click', function(){
     const notificationsTab = document.getElementById('notifications-tab');
     if (notificationsTab) {
         notificationsTab.addEventListener('click', function () {
-            notificationsTab.classList.add('active-tab');
-            notificationsTab.classList.remove('inactive-tab');
-
-            const alertsTab = document.getElementById('alerts-tab');
-            if (alertsTab) {
-                alertsTab.classList.remove('active-tab');
-                alertsTab.classList.add('inactive-tab');
-            }
-
-            const dataFeedTab = document.getElementById('data-feed-tab');
-            if (dataFeedTab) {
-                dataFeedTab.classList.remove('active-tab');
-                dataFeedTab.classList.add('inactive-tab');
-            }
-
-            const alertsContent = document.getElementById('alerts-content');
-            if (alertsContent) {
-                alertsContent.classList.add('hidden');
-            }
-
+            // ...existing code...
             const notificationsContent = document.getElementById('notifications-content');
             if (notificationsContent) {
                 notificationsContent.classList.remove('hidden');
