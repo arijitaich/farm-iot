@@ -285,3 +285,21 @@ def get_device_data_range(device_id):
         return jsonify({'error': 'Invalid date format. Use ISO format (YYYY-MM-DD).'}), 400
     except Exception as e:
         return jsonify({'error': 'Failed to fetch device data', 'details': str(e)}), 500
+
+
+@api_bp.route('/device_data_all/<device_id>', methods=['GET'])
+@login_required
+def get_all_device_data_records(device_id):
+    try:
+        # Fetch all sensor data records for the device
+        records = SensorData.query.filter_by(device_id=device_id).order_by(SensorData.timestamp.asc()).all()
+        data_list = [
+            {
+                'time': record.timestamp.isoformat(),
+                'data': record.data
+            }
+            for record in records
+        ]
+        return jsonify(data_list)
+    except Exception as e:
+        return jsonify({'error': 'Failed to fetch all device data', 'details': str(e)}), 500
