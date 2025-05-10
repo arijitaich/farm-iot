@@ -225,6 +225,8 @@
                                     <span id="notification-counter" class="absolute top-0 right-0 bg-red-600 text-white rounded-full text-xs w-5 h-5 flex items-center justify-center hidden">0</span>
                                 </button>
 
+                                <button id="data-feed-tab" class="bg-gray-700 text-white px-4 py-2 rounded inactive-tab">Data Feed</button>
+
                             </nav>
 
                             <!-- Alerts Content -->
@@ -286,6 +288,24 @@
                                         </thead>
                                         <tbody id="all-data-list" class="bg-gray-600">
                                             <!-- Data will be dynamically added here -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Data Feed Content -->
+                            <div id="data-feed-content" class="hidden">
+                                <h3 class="text-xl font-semibold mb-2 text-white">Data Feed</h3>
+                                <div class="overflow-auto max-h-96">
+                                    <table class="min-w-full text-white">
+                                        <thead>
+                                            <tr class="bg-gray-700">
+                                                <th class="px-4 py-2">Time</th>
+                                                <th class="px-4 py-2">Parameters</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="data-feed-list" class="bg-gray-600">
+                                            <!-- Data feed rows will be dynamically added here -->
                                         </tbody>
                                     </table>
                                 </div>
