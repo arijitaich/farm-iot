@@ -199,3 +199,34 @@ def get_all_device_data(device_id):
         return jsonify({'records': data_list})
     except Exception as e:
         return jsonify({'error': 'Failed to fetch device data', 'details': str(e)}), 500
+
+
+@api_bp.route('/device_data/<device_id>', methods=['GET'])
+@login_required
+def get_device_data(device_id):
+    try:
+        # Fetch device information
+        device = Device.query.filter_by(device_id=device_id).first()
+        if not device:
+            return jsonify({'error': 'Device not found'}), 404
+
+        # Fetch the latest sensor data for the device
+        latest_data = SensorData.query.filter_by(device_id=device_id).order_by(SensorData.timestamp.desc()).first()
+        data_points = latest_data.data if latest_data else {}
+
+        # Extract parameter names from the data points
+        params = list(data_points.keys()) if isinstance(data_points, dict) else []
+
+        # Prepare the response
+        response = {
+            'device_id': device.device_id,
+            'device_name': device.device_name,
+            'device_type': device.device_type,
+            'device_description': device.device_description,
+            'data_points': data_points,
+            'params': params
+        }
+
+        return jsonify(response)
+    except Exception as e:
+        return jsonify({'error': 'Failed to fetch device data', 'details': str(e)}), 500
