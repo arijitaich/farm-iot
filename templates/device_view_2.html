@@ -217,7 +217,7 @@
                         <h2 class="text-2xl font-semibold mb-4 text-white">Device Management</h2>
                         <div class="flex flex-col space-y-4">
                             <!-- Tabs Navigation -->
-                            <nav class="flex space-x-4 mb-4">
+                            <nav class="flex space-x-4 mb-4" aria-label="Device Management Tabs">
                                 <button id="alerts-tab" class="bg-blue-500 text-white px-4 py-2 rounded active-tab text-white">Alerts</button>
 
                                 <button id="notifications-tab" class="bg-gray-700 text-white px-4 py-2 rounded inactive-tab relative">
@@ -386,13 +386,12 @@
         </div>
     </div>
 
+
     <script>
         let selectedChartId = null;
 
 function titleCase(str) {
-    return str.toLowerCase().split(' ').map(function(word) {
-        return word.charAt(0).toUpperCase() + word.slice(1);
-    }).join(' ');
+    return str.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 }
 
 function showError(message) {
@@ -401,55 +400,68 @@ function showError(message) {
 
 function showDeleteConfirmation(chartId, chartName) {
     selectedChartId = chartId;
-    document.getElementById('delete-confirmation-message').textContent = `Are you sure you want to delete the chart "${chartName}"?`;
-    document.getElementById('delete-confirmation-modal').classList.remove('hidden');
+    const confirmationEl = document.getElementById('delete-confirmation-message');
+    const modalEl = document.getElementById('delete-confirmation-modal');
+    if (confirmationEl && modalEl) {
+        confirmationEl.textContent = `Are you sure you want to delete the chart "${chartName}"?`;
+        modalEl.classList.remove('hidden');
+    }
 }
 
 function deleteChart(chartId) {
-    fetch(`/delete-chart/${chartId}`, {
-        method: 'POST'
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data.error) {
-            showError(data.error);
-        } else {
-            document.querySelector(`[data-chart-id="${chartId}"]`).parentElement.remove();
-        }
-    })
-    .catch(error => {
-        console.error('There was a problem with the fetch operation:', error);
-        // showError('An error occurred while deleting the chart.');
-    });
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    const deviceId = getDeviceIdFromUrl();
-    fetchDeviceData(deviceId)
+    fetch(`/delete-chart/${chartId}`, { method: 'POST' })
+        .then(response => {
+            if (!response.ok) throw new Error('Network response was not ok');
+            return response.json();
+        })
         .then(data => {
-            if (data && data.parameters) {
-                fetchDeviceCharts(deviceId);
-                generateChartsForDevice(deviceId);
-                fetchAlerts(deviceId);
-                populateParams(data.parameters); // Assume the parameters are part of the device data response
+            if (data.error) {
+                showError(data.error);
             } else {
-                console.error('Device data or parameters are undefined.');
+                const chartElement = document.querySelector(`[data-chart-id="${chartId}"]`);
+                if (chartElement) chartElement.parentElement.remove();
             }
         })
-        .catch(error =>console.error(error));
-});
+        .catch(error => console.error('Delete chart failed:', error));
+}
+
+function getDeviceIdFromUrl() {
+    const urlParts = window.location.pathname.split('/');
+    return urlParts[urlParts.length - 1];
+}
+
+function fetchDeviceData(deviceId) {
+    return fetch(`/device_data/${deviceId}`)
+        .then(response => response.json())
+        .then(data => {
+            const nameEl = document.getElementById('device-name');
+            const detailsEl = document.getElementById('device-details');
+            if (nameEl) nameEl.textContent = data.device_name;
+            if (detailsEl) {
+                detailsEl.innerHTML = `${data.device_id}<br>${data.device_type}<br>${data.device_description}`;
+            }
+            updateDeviceDataPoints(data.data_points);
+            populateYAxisParams(data.data_points, 'y-axis-params');
+            populateXAxisParams(data.data_points, 'x-axis-params');
+            updateDeviceWebhook(data.device_id, data.data_points);
+            populateAlertParameters(data.data_points);
+            return data;
+        })
+        .catch(error => {
+            console.error('Error fetching device data:', error);
+            return {};
+        });
+}
 
 
 function populateParams(params) {
     const xAxisParamsContainer = document.getElementById('x-axis-params');
     const yAxisParamsContainer = document.getElementById('y-axis-params');
+    if (!xAxisParamsContainer || !yAxisParamsContainer) return;
 
-    // Populate both X-axis parameters (radio buttons) and Y-axis parameters (checkboxes)
+    xAxisParamsContainer.innerHTML = '';
+    yAxisParamsContainer.innerHTML = '';
+
     params.forEach(param => {
         // X-axis radio button
         const radio = document.createElement('input');
@@ -458,9 +470,11 @@ function populateParams(params) {
         radio.name = 'xAxisParam';
         radio.value = param;
         radio.required = true;
+
         const radioLabel = document.createElement('label');
         radioLabel.htmlFor = radio.id;
         radioLabel.textContent = param;
+
         const radioDiv = document.createElement('div');
         radioDiv.appendChild(radio);
         radioDiv.appendChild(radioLabel);
@@ -472,9 +486,11 @@ function populateParams(params) {
         checkbox.id = `y-axis-param-${param}`;
         checkbox.name = 'yAxisParams';
         checkbox.value = param;
+
         const checkboxLabel = document.createElement('label');
         checkboxLabel.htmlFor = checkbox.id;
         checkboxLabel.textContent = param;
+
         const checkboxDiv = document.createElement('div');
         checkboxDiv.appendChild(checkbox);
         checkboxDiv.appendChild(checkboxLabel);
@@ -482,762 +498,229 @@ function populateParams(params) {
     });
 }
 
-document.getElementById('add-data-btn').addEventListener('click', () => {
-    document.getElementById('add-data-chart-modal').classList.remove('hidden');
-});
+function updateDeviceWebhook(deviceId, dataPoints) {
+    const webhookEl = document.getElementById('device-webhook-url');
+    if (!webhookEl) return;
 
-document.getElementById('cancel-add-data-chart').addEventListener('click', () => {
-    document.getElementById('add-data-chart-modal').classList.add('hidden');
-});
+    const origin = window.location.origin;
+    const payload = Object.entries(dataPoints && Object.keys(dataPoints).length ? dataPoints : {
+        temperature: '25',
+        humidity: '60',
+        pressure: '1013'
+    }).map(([key, value]) => `${key}=${value}`).join('&');
 
-
-
-
-
-
-
-
-
-
-
-
-
-document.getElementById('add-data-chart-form').addEventListener('submit', function(event) {
-    event.preventDefault();
-
-    const deviceId = getDeviceIdFromUrl();
-    const chartName = document.getElementById('chart-name').value;
-    const chartType = document.getElementById('chart-type').value;
-    const liveData = document.getElementById('live-data').checked;
-    const startDate = document.getElementById('start-date').value;
-    const endDate = document.getElementById('end-date').value;
-    const xAxisParam = document.querySelector('input[name="xAxisParam"]:checked').value;
-    const yAxisParams = Array.from(document.querySelectorAll('input[name="yAxisParams"]:checked')).map(checkbox => checkbox.value);
-
-    if ((liveData && (startDate || endDate)) || (!liveData && (!startDate || !endDate))) {
-        showError('Either select live data or provide a valid date range.');
-        return;
-    }
-
-    if (!xAxisParam || !yAxisParams) {
-        alert('Please select an option for both the axis.');
-        return;
-    }
-
-    let fetchUrl = `/device_data_range/${deviceId}?start_date=${startDate}&end_date=${endDate}`;
-    if (liveData) {
-        fetchUrl = `/device_data_last_20/${deviceId}`;
-    }
-
-    fetch(fetchUrl, {
-        headers: {
-            'Authorization': 'Bearer ' + localStorage.getItem('token')
-        }
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data.error) {
-            showError(data.error);
-        } else {
-            if (data.length === 0) {
-                showError('No data available for the selected parameters.');
-                return;
-            }
-
-            const xAxisValues = data.map(point => point.data[xAxisParam]);
-            const yAxisValues = data.map(point => {
-                return yAxisParams.reduce((acc, param) => {
-                    acc[param] = point.data[param];
-                    return acc;
-                }, {});
-            });
-
-            fetch('/create-chart', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + localStorage.getItem('token')
-                },
-                body: JSON.stringify({
-                    device_id: deviceId,
-                    chart_name: chartName,
-                    chart_type: chartType,
-                    x_axis_params: { label: xAxisParam, data: xAxisValues }, // Include label for x_axis_params
-                    is_live: liveData,
-                    y_axis_params: yAxisParams.map(param => ({ label: param, data: yAxisValues.map(value => value[param]) })),
-                    position: document.querySelectorAll('#device-charts > div').length
-                })
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.error) {
-                    showError(data.error);
-                } else 
-                {
-                    fetchDeviceCharts(deviceId);
-                    generateChartsForDevice(deviceId);
-                    document.getElementById('add-data-chart-modal').classList.add('hidden');
-                }
-            })
-            .catch(error => {
-                console.error('There was a problem with the fetch operation:', error);
-                showError('An error occurred while creating the chart.');
-            });
-        }
-    })
-    .catch(error => {
-        console.error('There was a problem with the fetch operation:', error);
-        // showError('An error occurred while fetching device data.');
-    });
-});
-
-
-
-
-
-
-
-
-
-
-
-document.getElementById('confirm-delete').addEventListener('click', () => {
-    deleteChart(selectedChartId);
-    document.getElementById('delete-confirmation-modal').classList.add('hidden');
-});
-
-document.getElementById('cancel-delete').addEventListener('click', () => {
-    document.getElementById('delete-confirmation-modal').classList.add('hidden');
-});
-
-
-
-        document.getElementById('confirm-delete').addEventListener('click', () => {
-            deleteChart(selectedChartId);
-            document.getElementById('delete-confirmation-modal').classList.add('hidden');
-        });
-    
-        document.getElementById('cancel-delete').addEventListener('click', () => {
-            document.getElementById('delete-confirmation-modal').classList.add('hidden');
-        });
-    
-        document.getElementById('menu-btn').addEventListener('click', function () {
-            const mobileSidebar = document.getElementById('mobile-sidebar');
-            const desktopDropdown = document.getElementById('desktop-dropdown');
-            if (window.innerWidth >= 1024) {
-                desktopDropdown.classList.toggle('hidden');
-            } else {
-                mobileSidebar.classList.toggle('transform');
-                mobileSidebar.classList.toggle('transform-active');
-            }
-        });
-    
-        document.getElementById('close-sidebar-btn').addEventListener('click', function () {
-            const mobileSidebar = document.getElementById('mobile-sidebar');
-            mobileSidebar.classList.add('transform');
-            mobileSidebar.classList.remove('transform-active');
-        });
-    
-        document.addEventListener('click', function (event) {
-            const desktopDropdown = document.getElementById('desktop-dropdown');
-            const menuBtn = document.getElementById('menu-btn');
-            const isClickInside = desktopDropdown.contains(event.target) || menuBtn.contains(event.target);
-    
-            if (!isClickInside && !desktopDropdown.classList.contains('hidden')) {
-                desktopDropdown.classList.add('hidden');
-            }
-        });
-    
-        document.getElementById('logout-btn').addEventListener('click', function () {
-            showLoader();
-            fetch('/logout', { method: 'POST' })
-                .then(response => {
-                    hideLoader();
-                    if (response.ok) {
-                        window.location.href = '/';
-                    } else {
-                        showError('Logout failed. Please try again.');
-                    }
-                })
-                .catch(error => {
-                    hideLoader();
-                    showError('An error occurred. Please try again.');
-                });
-        });
-    
-        function showLoader() {
-            const loaderModal = document.getElementById('loader-modal');
-            loaderModal.classList.remove('hidden');
-        }
-    
-        function hideLoader() {
-            const loaderModal = document.getElementById('loader-modal');
-            loaderModal.classList.add('hidden');
-        }
-    
-        // Optional: Refresh charts and data points every 5 minutes
-        setInterval(() => {
-            const deviceId = getDeviceIdFromUrl();
-            fetchDeviceData(deviceId);
-            fetchDeviceCharts(deviceId);
-            generateChartsForDevice(deviceId);
-        }, 5 * 60 * 1000);
-    
-        
-        function updateDeviceCharts(charts) {
-    const deviceCharts = document.getElementById('device-charts');
-    deviceCharts.innerHTML = '';
-
-    charts.forEach(chart => {
-        const chartCard = document.createElement('div');
-        chartCard.className = 'bg-gradient-to-r from-teal-500 to-cyan-600 p-4 rounded-lg shadow-lg text-white card-border';
-        chartCard.innerHTML = `
-            <h3 class="text-lg font-semibold">${chart.chart_name}</h3>
-            <p class="text-md">${chart.chart_type}</p>
-            <canvas id="chart-${chart.id}"></canvas>
-            <button class="bg-red-500 text-white px-2 py-1 rounded text-sm mt-2 delete-chart-btn" data-chart-id="${chart.id}" data-chart-name="${chart.chart_name}">Delete</button>
-        `;
-        deviceCharts.appendChild(chartCard);
-
-        const xAxisParams = chart.x_axis_params;
-
-        const ctx = document.getElementById(`chart-${chart.id}`).getContext('2d');
-        new Chart(ctx, {
-            type: chart.chart_type,
-            data: {
-                labels: xAxisParams.data, // Use the data part of x_axis_params for X-Axis labels
-                datasets: chart.y_axis_params.map(param => ({
-                    label: param.label,
-                    data: param.data,
-                    backgroundColor: getRandomColor(),
-                    borderColor: getRandomColor(),
-                    borderWidth: 1
-                }))
-            },
-            options: {
-                scales: {
-                    x: {
-                        title: {
-                            display: true,
-                            text: xAxisParams.label // Set the label for the X-Axis
-                        }
-                    },
-                    y: {
-                        beginAtZero: true
-                    }
-                }
-            }
-        });
-
-        document.querySelectorAll('.delete-chart-btn').forEach(button => {
-            button.addEventListener('click', function () {
-                const chartId = this.getAttribute('data-chart-id');
-                const chartName = this.getAttribute('data-chart-name');
-                showDeleteConfirmation(chartId, chartName);
-            });
-        });
-    });
+    webhookEl.textContent = `${origin}/data?device_id=${deviceId}&${payload}`;
 }
 
+function updateDeviceDataPoints(dataPoints) {
+    const container = document.getElementById('device-data-points');
+    if (!container) return;
 
-        function getRandomColor() {
-            const letters = '0123456789ABCDEF';
-            let color = '#';
-            for (let i = 0; i < 6; i++) {
-                color += letters[Math.floor(Math.random() * 16)];
-            }
-            return color;
-        }
-    
-    
-        // Ensure chartConfigs is defined and accessible before this 
-const chartConfigs = [
-    {
-        start_date: '2024-08-01',
-        end_date: '2024-08-19',
-        chartInstance: null, 
-        // This will hold the Chart.js instance after it's created
-        // Other chart configuration options if needed
-    }
-];
-
-function updateChartsPeriodically() {
-    setInterval(() => {
-        const deviceId = getDeviceIdFromUrl();
-        fetch(`/device_data_range/${deviceId}?start_date=${chartConfigs[0].start_date}&end_date=${chartConfigs[0].end_date}`, {
-            headers: {
-                'Authorization': 'Bearer ' + localStorage.getItem('token')
-            }
-        })
-        .then(response => {
-            if (!response.ok) {
-                thrownewError('Network response was not ok');
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.error) {
-                showError(data.error);
-            } else if (data.length > 0) {
-                const timestamps = data.map(point => point.time);
-                const parameters = Object.keys(data[0].data); 
-                // Get dynamic parameter names from the first data point
-                // Dynamically set up the datasets for the chart
-                const datasets = parameters.map(param => {
-                    return {
-                        label: param,
-                        data: data.map(point =>parseFloat(point.data[param])),
-                        // Customize the chart display settings here
-                    };
-                });
-                
-                // If the chart does not exist, create it
-                if (!chartConfigs[0].chartInstance) {
-                    const ctx = document.getElementById('yourChartId').getContext('2d');
-                    chartConfigs[0].chartInstance = newChart(ctx, {
-                        type: 'line', // or 'bar', 'pie', 
-                        data: {
-                            labels: timestamps,
-                            datasets: datasets
-                        },
-                        options: {
-                            // Add your chart options here
-                        }
-                    });
-                } else {
-                    // If the chart already exists, update it
-                    chartConfigs[0].chartInstance.data.labels = timestamps;
-                    chartConfigs[0].chartInstance.data.datasets = datasets;
-                    chartConfigs[0].chartInstance.update();
-                }
-            } 
-            else {
-                console.warn('No data available for the specified date range.');
-            }
-        })
-        .catch(error => {
-            console.error('There was a problem with the fetch operation:', error);
-            // showError('An error occurred while fetching device data.');
-        });
-    }, 5 * 60 * 1000); // 5 minutes
-}
-
-
-
-
-        document.addEventListener('DOMContentLoaded', () => {
-            const deviceId = getDeviceIdFromUrl();
-            fetchDeviceData(deviceId);
-            fetchDeviceCharts(deviceId).then(generateChartsForDevice(deviceId));
-        });
-    
-        document.getElementById('alerts-tab').addEventListener('click', function () {
-            document.getElementById('alerts-tab').classList.add('active-tab');
-            document.getElementById('alerts-tab').classList.remove('inactive-tab');
-            document.getElementById('notifications-tab').classList.remove('active-tab');
-            document.getElementById('notifications-tab').classList.add('inactive-tab');
-            document.getElementById('data-feed-tab').classList.remove('active-tab');
-            document.getElementById('data-feed-tab').classList.add('inactive-tab');
-    
-            document.getElementById('alerts-content').classList.remove('hidden');
-            document.getElementById('notifications-content').classList.add('hidden');
-            document.getElementById('data-feed-content').classList.add('hidden');
-        });
-    
-        document.getElementById('notifications-tab').addEventListener('click', function () {
-            document.getElementById('notifications-tab').classList.add('active-tab');
-            document.getElementById('notifications-tab').classList.remove('inactive-tab');
-            document.getElementById('alerts-tab').classList.remove('active-tab');
-            document.getElementById('alerts-tab').classList.add('inactive-tab');
-            document.getElementById('data-feed-tab').classList.remove('active-tab');
-            document.getElementById('data-feed-tab').classList.add('inactive-tab');
-    
-            document.getElementById('alerts-content').classList.add('hidden');
-            document.getElementById('notifications-content').classList.remove('hidden');
-            document.getElementById('data-feed-content').classList.add('hidden');
-        });
-    
-        document.getElementById('data-feed-tab').addEventListener('click', function () {
-            document.getElementById('data-feed-tab').classList.add('active-tab');
-            document.getElementById('data-feed-tab').classList.remove('inactive-tab');
-            document.getElementById('alerts-tab').classList.remove('active-tab');
-            document.getElementById('alerts-tab').classList.add('inactive-tab');
-            document.getElementById('notifications-tab').classList.remove('active-tab');
-            document.getElementById('notifications-tab').classList.add('inactive-tab');
-    
-            document.getElementById('alerts-content').classList.add('hidden');
-            document.getElementById('notifications-content').classList.add('hidden');
-            document.getElementById('data-feed-content').classList.remove('hidden');
-        });
-    
-        // Fetch and update device data
-        function fetchDeviceData(deviceId) {
-            return fetch(`/device_data/${deviceId}`)
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById('device-name').textContent = data.device_name;
-                    document.getElementById('device-details').innerHTML = `${data.device_id}<br>${data.device_type}<br>${data.device_description}`;
-                    updateDeviceDataPoints(data.data_points);
-                    populateYAxisParams(data.data_points, 'y-axis-params');
-                    populateXAxisParams(data.data_points, 'x-axis-params');
-                    updateDeviceWebhook(data.device_id, data.data_points);
-                    populateAlertParameters(data.data_points);
-                })
-                .catch(error => console.error('Error fetching device data:', error));
-        }
-    
-        // Update device webhook URL
-        function updateDeviceWebhook(deviceId, dataPoints) {
-    // Fetch the current domain with protocol and port
-    let origin = window.location.origin;
-
-    // Check if dataPoints is empty
-    if (Object.keys(dataPoints).length === 0) {
-        // Use demo datapoints if none are provided
-        dataPoints = {
-            demo_temperature: '25',
-            demo_humidity: '60',
-            demo_pressure: '1013'
-        };
-    }
-
-    // Construct the URL using the fetched origin
-    let url = `${origin}/data?device_id=${deviceId}`;
-    
+    container.innerHTML = '';
     for (const [key, value] of Object.entries(dataPoints)) {
-        url += `&${key}=${value}`;
+        const card = document.createElement('div');
+        card.className = 'bg-gradient-to-r from-teal-500 to-cyan-600 p-4 rounded-lg shadow-lg text-white card-border';
+        card.innerHTML = `<h3 class="text-lg font-semibold">${key}</h3><p class="text-2xl">${value}</p>`;
+        container.appendChild(card);
     }
-
-    // Update the content of the element with the new URL
-    document.getElementById('device-webhook-url').textContent = url;
 }
 
 
-    
-        // Update device data points
-        function updateDeviceDataPoints(dataPoints) {
-            const deviceDataPoints = document.getElementById('device-data-points');
-            deviceDataPoints.innerHTML = '';
-    
-            for (const [key, value] of Object.entries(dataPoints)) {
-                const dataPointCard = document.createElement('div');
-                dataPointCard.className = 'bg-gradient-to-r from-teal-500 to-cyan-600 p-4 rounded-lg shadow-lg text-white card-border';
-                dataPointCard.innerHTML = `
-                    <h3 class="text-lg font-semibold">${key}</h3>
-                    <p class="text-2xl">${value}</p>
-                `;
-                deviceDataPoints.appendChild(dataPointCard);
-            }
-        }
-    
-        // Populate Y-Axis parameters for chart creation
-        function populateYAxisParams(dataPoints, containerId) {
-            const yAxisParamsContainer = document.getElementById(containerId);
-            yAxisParamsContainer.innerHTML = '';
-    
-            for (const key in dataPoints) {
-                const paramCheckbox = document.createElement('div');
-                paramCheckbox.className = 'flex items-center';
-                paramCheckbox.innerHTML = `
-                    <input type="checkbox" id="${key}" name="yAxisParams" value="${key}" class="mr-2">
-                    <label for="${key}" class="text-gray-700">${key}</label>
-                `;
-                yAxisParamsContainer.appendChild(paramCheckbox);
-            }
-        }
-    
-        function populateXAxisParams(dataPoints, containerId) {
-    const xAxisParamsContainer = document.getElementById(containerId);
-    xAxisParamsContainer.innerHTML = '';
+function populateYAxisParams(dataPoints, containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = '';
 
     for (const key in dataPoints) {
-        const paramRadio = document.createElement('div');
-        paramRadio.className = 'flex items-center';
-        paramRadio.innerHTML = `
+        const wrapper = document.createElement('div');
+        wrapper.className = 'flex items-center';
+        wrapper.innerHTML = `
+            <input type="checkbox" id="${key}" name="yAxisParams" value="${key}" class="mr-2">
+            <label for="${key}" class="text-gray-700">${key}</label>
+        `;
+        container.appendChild(wrapper);
+    }
+}
+
+function populateXAxisParams(dataPoints, containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = '';
+
+    for (const key in dataPoints) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'flex items-center';
+        wrapper.innerHTML = `
             <input type="radio" id="x-axis-${key}" name="xAxisParam" value="${key}" class="mr-2">
             <label for="x-axis-${key}" class="text-gray-700">${key}</label>
         `;
-        xAxisParamsContainer.appendChild(paramRadio);
+        container.appendChild(wrapper);
     }
 
-    const paramRadio = document.createElement('div');
-        paramRadio.className = 'flex items-center';
-        paramRadio.innerHTML = `
-            <input type="radio" id="x-axis-timestamp" name="xAxisParam" value="time" class="mr-2">
-            <label for="x-axis-timestamp" class="text-gray-700">timestamp</label>
+    const timestampWrapper = document.createElement('div');
+    timestampWrapper.className = 'flex items-center';
+    timestampWrapper.innerHTML = `
+        <input type="radio" id="x-axis-timestamp" name="xAxisParam" value="time" class="mr-2">
+        <label for="x-axis-timestamp" class="text-gray-700">timestamp</label>
+    `;
+    container.appendChild(timestampWrapper);
+}
+
+function populateAlertParameters(dataPoints) {
+    const select = document.getElementById('alert-parameter');
+    if (!select) return;
+    select.innerHTML = '';
+
+    for (const key in dataPoints) {
+        const option = document.createElement('option');
+        option.value = key;
+        option.textContent = key;
+        select.appendChild(option);
+    }
+}
+
+function fetchAlerts(deviceId) {
+    return fetch(`/get-alerts/${deviceId}`, {
+        headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.alerts) updateAlertList(data.alerts);
+    })
+    .catch(err => console.error('Error fetching alerts:', err));
+}
+
+function updateAlertList(alerts) {
+    const container = document.getElementById('alert-list');
+    if (!container) return;
+    container.innerHTML = '';
+
+    alerts.forEach(alert => {
+        const li = document.createElement('li');
+        li.className = 'bg-gray-700 p-2 rounded flex justify-between items-center text-white';
+        li.innerHTML = `
+            <span>${alert.name} - ${alert.parameter}: ${alert.value}</span>
+            <button class="bg-red-500 text-white px-2 py-1 rounded delete-alert-btn" data-alert-id="${alert.id}">Delete</button>
         `;
-        xAxisParamsContainer.appendChild(paramRadio);
+        container.appendChild(li);
 
-    
-}
-
-
-        // Populate alert parameters
-        function populateAlertParameters(dataPoints) {
-            const alertParameterSelect = document.getElementById('alert-parameter');
-            alertParameterSelect.innerHTML = '';
-    
-            for (const key in dataPoints) {
-                const option = document.createElement('option');
-                option.value = key;
-                option.textContent = key;
-                alertParameterSelect.appendChild(option);
-            }
-        }
-    
-        // Fetch and update alert list
-        function fetchAlerts(deviceId) {
-            fetch(`/get-alerts/${deviceId}`, {
-                headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token')
-                }
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.alerts) {
-                        updateAlertList(data.alerts);
-                    } else {
-                        // showError('Error fetching alerts');
-                    }
-                })
-                .catch(error => console.error('Error fetching alerts:', error));
-        }
-    
-        // Update alert list
-        function updateAlertList(alerts) {
-            const alertList = document.getElementById('alert-list');
-            alertList.innerHTML = '';
-    
-            alerts.forEach(alert => {
-                const alertItem = document.createElement('li');
-                alertItem.className = 'bg-gray-700 p-2 rounded flex justify-between items-center text-white';
-                alertItem.innerHTML = `
-                    <span>${alert.name} - ${alert.parameter}: ${alert.value}</span>
-                    <button class="bg-red-500 text-white px-2 py-1 rounded delete-alert-btn" data-alert-id="${alert.id}">Delete</button>
-                `;
-                alertList.appendChild(alertItem);
-    
-                alertItem.querySelector('.delete-alert-btn').addEventListener('click', function() {
-                    const alertId = this.getAttribute('data-alert-id');
-                    deleteAlert(alertId);
-                });
-            });
-        }
-    
-        // Create new alert
-        function CreateAlert() {
-            // event.preventDefault();
-    
-            const deviceId = getDeviceIdFromUrl();
-            const alertName = document.getElementById('alert-name').value;
-            const alertParameter = document.getElementById('alert-parameter').value;
-            const alertValue = document.getElementById('alert-value').value;
-            const alertGate = document.getElementById('alert-gate').value;
-    
-            fetch('/create_alert', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + localStorage.getItem('token')
-                },
-                body: JSON.stringify({
-                    device_id: deviceId,
-                    alert_name: alertName,
-                    alert_parameter: alertParameter,
-                    alert_value: alertValue,
-                    alert_gate: alertGate
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                fetchAlerts(deviceId);
-            })
-            .catch(error => console.error('Error creating alert:', error));
-        }
-    
-        // Delete alert
-        function deleteAlert(alertId) {
-            fetch(`/delete_alert/${alertId}`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token')
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                const deviceId = getDeviceIdFromUrl();
-                fetchAlerts(deviceId);
-            })
-            .catch(error => console.error('Error deleting alert:', error));
-        }
-    
-        // Function to get device ID from URL
-        function getDeviceIdFromUrl() {
-            const urlParts = window.location.pathname.split('/');
-            return urlParts[urlParts.length - 1];
-        }
-
-
-
-        
-
-
-
-
-
-
-
-function fetchDeviceData(deviceId) {
-    return fetch(`/device_data/${deviceId}`)
-        .then(response => response.json())
-        .then(data => {
-            document.getElementById('device-name').textContent = data.device_name;
-            document.getElementById('device-details').innerHTML = `${data.device_id}<br>${data.device_type}<br>${data.device_description}`;
-            updateDeviceDataPoints(data.data_points);
-            populateYAxisParams(data.data_points, 'y-axis-params');
-            populateXAxisParams(data.data_points, 'x-axis-params');
-            updateDeviceWebhook(data.device_id, data.data_points);
-            populateAlertParameters(data.data_points);
-        })
-        .catch(error => console.error('Error fetching device data:', error));
-}
-
-function fetchDeviceCharts(deviceId) {
-    return fetch(`/get-charts/${deviceId}`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.error) {
-                showError(data.error);
-            } else {
-                updateDeviceCharts(data.charts);
-            }
-        })
-        .catch(error => {
-            console.error('There was a problem with the fetch operation:', error);
-            // showError('An error occurred while fetching charts.');
+        li.querySelector('.delete-alert-btn').addEventListener('click', () => {
+            deleteAlert(alert.id);
         });
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    const deviceId = getDeviceIdFromUrl();
-    fetchDeviceData(deviceId)
-        .then(() => {
-            return fetchDeviceCharts(deviceId);
-        })
-        .then(() => {
-            fetchAlerts(deviceId);
-            fetchNotifications(deviceId); // Add this line to fetch notifications on page load
-            // updateChartsPeriodically();
-            generateChartsForDevice(deviceId);
-        })
-        .catch(error => console.error(error));
-});
-
-
-function getDeviceIdFromUrl() {
-    const urlParts = window.location.pathname.split('/');
-    return urlParts[urlParts.length - 1];
-}
-
-function fetchNotifications(device_id) {
-            const token = localStorage.getItem('token'); // Retrieve the token from local storage
-            // console.log('Fetching notifications for device_id:', device_id); // Log the device ID
-            // console.log('Using token:', token); // Log the token being used
-
-            $.ajax({
-                url: `/get-notifications/${device_id}`,
-                type: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                },
-                success: function(data, textStatus, jqXHR) {
-                    // console.log('AJAX call succeeded');
-                    // console.log('Status:', textStatus);
-                    // console.log('Data:', data); // Log the raw response string
-                    populateNotificationsList(data.notifications);
-                    updateNotificationCounter(data.unseen_count);
-                },
-                error: function(jqXHR, textStatus, errorThrown) {
-                    console.log('AJAX call failed');
-                    console.error('Error:', textStatus, errorThrown);
-                }
-            });
-        }
-
-        function populateNotificationsList(notifications) {
-            const notificationsList = document.getElementById('notifications-list');
-            notificationsList.innerHTML = ''; // Clear any existing notifications
-
-            notifications.forEach(notification => {
-                const listItem = document.createElement('li');
-                listItem.className = 'bg-gray-700 p-2 rounded text-white';
-                listItem.innerHTML = `
-                    <strong>${notification.alert_name}</strong><br>
-                    ${notification.message}<br>
-                    <small>${notification.time}</small>
-                `;
-                notificationsList.appendChild(listItem);
-            });
-        }
-
-
-function updateNotificationList(notifications) {
-    
-    const notificationList = document.getElementById('notifications-list');
-    notificationList.innerHTML = '';
-
-    notifications.forEach(notification => {
-        const notificationItem = document.createElement('li');
-        notificationItem.className = 'bg-gray-700 p-2 rounded';
-        notificationItem.textContent = notification.notification_message;
-        notificationList.appendChild(notificationItem);
     });
 }
 
-function updateNotificationCounter(count) {
-    const notificationCounter = document.getElementById('notification-counter');
-    if (count > 0) {
-        notificationCounter.textContent = count;
-        notificationCounter.classList.remove('hidden');
-    } else {
-        notificationCounter.classList.add('hidden');
-    }
+
+function CreateAlert() {
+    const deviceId = getDeviceIdFromUrl();
+    const alertName = document.getElementById('alert-name')?.value;
+    const alertParameter = document.getElementById('alert-parameter')?.value;
+    const alertValue = document.getElementById('alert-value')?.value;
+    const alertGate = document.getElementById('alert-gate')?.value;
+
+    fetch('/create_alert', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
+        },
+        body: JSON.stringify({
+            device_id: deviceId,
+            alert_name: alertName,
+            alert_parameter: alertParameter,
+            alert_value: alertValue,
+            alert_gate: alertGate
+        })
+    })
+    .then(response => response.json())
+    .then(() => fetchAlerts(deviceId))
+    .catch(error => console.error('Error creating alert:', error));
 }
 
-document.getElementById('notifications-tab').addEventListener('click', function () {
-    document.getElementById('notifications-tab').classList.add('active-tab');
-    document.getElementById('notifications-tab').classList.remove('inactive-tab');
-    document.getElementById('alerts-tab').classList.remove('active-tab');
-    document.getElementById('alerts-tab').classList.add('inactive-tab');
-    document.getElementById('data-feed-tab').classList.remove('active-tab');
-    document.getElementById('data-feed-tab').classList.add('inactive-tab');
-
-    document.getElementById('alerts-content').classList.add('hidden');
-    document.getElementById('notifications-content').classList.remove('hidden');
-    document.getElementById('data-feed-content').classList.add('hidden');
-
-    // Mark notifications as seen
-    const deviceId = getDeviceIdFromUrl();
-    fetch(`/mark-notifications-seen/${deviceId}`, {
+function deleteAlert(alertId) {
+    fetch(`/delete_alert/${alertId}`, {
         method: 'POST',
         headers: {
             'Authorization': 'Bearer ' + localStorage.getItem('token')
         }
+    })
+    .then(response => response.json())
+    .then(() => {
+        const deviceId = getDeviceIdFromUrl();
+        fetchAlerts(deviceId);
+    })
+    .catch(error => console.error('Error deleting alert:', error));
+}
+
+function fetchNotifications(device_id) {
+    const token = localStorage.getItem('token');
+    $.ajax({
+        url: `/get-notifications/${device_id}`,
+        type: 'GET',
+        headers: { 'Authorization': `Bearer ${token}` },
+        success: function (data) {
+            populateNotificationsList(data.notifications);
+            updateNotificationCounter(data.unseen_count);
+        },
+        error: function (jqXHR, textStatus, errorThrown) {
+            console.log('AJAX call failed');
+            console.error('Error:', textStatus, errorThrown);
+        }
+    });
+}
+
+function populateNotificationsList(notifications) {
+    const list = document.getElementById('notifications-list');
+    if (!list) return;
+    list.innerHTML = '';
+
+    notifications.forEach(notification => {
+        const li = document.createElement('li');
+        li.className = 'bg-gray-700 p-2 rounded text-white';
+        li.innerHTML = `
+            <strong>${notification.alert_name}</strong><br>
+            ${notification.message}<br>
+            <small>${notification.time}</small>
+        `;
+        list.appendChild(li);
+    });
+}
+
+function updateNotificationCounter(count) {
+    const counter = document.getElementById('notification-counter');
+    if (!counter) return;
+    if (count > 0) {
+        counter.textContent = count;
+        counter.classList.remove('hidden');
+    } else {
+        counter.classList.add('hidden');
+    }
+}
+
+
+document.getElementById('notifications-tab')?.addEventListener('click', function () {
+    const alertsTab = document.getElementById('alerts-tab');
+    const notificationsTab = document.getElementById('notifications-tab');
+    const dataFeedTab = document.getElementById('data-feed-tab');
+    const alertsContent = document.getElementById('alerts-content');
+    const notificationsContent = document.getElementById('notifications-content');
+    const dataFeedContent = document.getElementById('data-feed-content');
+
+    notificationsTab.classList.add('active-tab');
+    notificationsTab.classList.remove('inactive-tab');
+    alertsTab?.classList.remove('active-tab');
+    alertsTab?.classList.add('inactive-tab');
+    dataFeedTab?.classList.remove('active-tab');
+    dataFeedTab?.classList.add('inactive-tab');
+
+    alertsContent?.classList.add('hidden');
+    notificationsContent?.classList.remove('hidden');
+    dataFeedContent?.classList.add('hidden');
+
+    const deviceId = getDeviceIdFromUrl();
+    fetch(`/mark-notifications-seen/${deviceId}`, {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
     })
     .then(response => response.json())
     .then(data => {
@@ -1259,6 +742,7 @@ setInterval(() => {
 }, 5 * 60 * 1000);
 
 
+
 function generateChartsForDevice(deviceId) {
     fetch(`/device_data_last_20/${deviceId}`, {
         headers: {
@@ -1266,103 +750,90 @@ function generateChartsForDevice(deviceId) {
         }
     })
     .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
+        if (!response.ok) throw new Error('Network response was not ok');
         return response.json();
     })
     .then(data => {
         if (data.error) {
             showError(data.error);
-        } else {
-            if (data.length === 0) {
-                console.log('No data available for the selected device.');
-                return;
-            }
+            return;
+        }
 
-            const xAxisParam = 'time'; // Assuming time is always the X-axis parameter
-            const yAxisParams = Object.keys(data[0].data); // Dynamically get Y-axis parameters from the first data point
-            const xAxisValues = data.map(point => point[xAxisParam]);
+        if (data.length === 0) {
+            console.log('No data available for the selected device.');
+            return;
+        }
 
-            // Clear previous charts if any
-            document.getElementById('chart_response').innerHTML = '';
+        const xAxisParam = 'time';
+        const yAxisParams = Object.keys(data[0].data);
+        const xAxisValues = data.map(point => point[xAxisParam]);
 
-            // Create a wrapper div for all charts
-            const gridContainer = document.createElement('div');
-            gridContainer.className = 'grid grid-cols-1 md:grid-cols-3 gap-4';
-            document.getElementById('chart_response').appendChild(gridContainer);
+        document.getElementById('chart_response').innerHTML = '';
 
-            // Create a chart for each Y-axis parameter
-            yAxisParams.forEach(param => {
-                const paramData = data.map(point => point.data[param]);
+        const gridContainer = document.createElement('div');
+        gridContainer.className = 'grid grid-cols-1 md:grid-cols-3 gap-4';
+        document.getElementById('chart_response').appendChild(gridContainer);
 
-                // Create a container for each chart
-                const chartContainer = document.createElement('div');
-                chartContainer.className = 'bg-gradient-to-r from-teal-500 to-cyan-600 p-4 rounded-lg shadow-lg text-white card-border';
-                chartContainer.innerHTML = `
-                    <h3 class="text-lg font-semibold">${titleCase(param)}</h3>
-                    <canvas id="chart_${param}"></canvas>
-                `;
-                gridContainer.appendChild(chartContainer);
+        yAxisParams.forEach(param => {
+            const paramData = data.map(point => point.data[param]);
 
-                const ctx = document.getElementById(`chart_${param}`).getContext('2d');
+            const chartContainer = document.createElement('div');
+            chartContainer.className = 'bg-gradient-to-r from-teal-500 to-cyan-600 p-4 rounded-lg shadow-lg text-white card-border';
+            chartContainer.innerHTML = `
+                <h3 class="text-lg font-semibold">${titleCase(param)}</h3>
+                <canvas id="chart_${param}"></canvas>
+            `;
+            gridContainer.appendChild(chartContainer);
 
-                new Chart(ctx, {
-                    type: 'line', // or 'bar', 'pie', etc.
-                    data: {
-                        labels: xAxisValues,
-                        datasets: [{
-                            label: titleCase(param),
-                            data: paramData,
-                            backgroundColor: getRandomColor(),
-                            borderColor: getRandomColor(),
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        scales: {
-                            x: {
-                                title: {
-                                    display: true,
-                                    text: titleCase(xAxisParam)
-                                }
-                            },
-                            y: {
-                                beginAtZero: true
-                            }
+            const ctx = document.getElementById(`chart_${param}`).getContext('2d');
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: xAxisValues,
+                    datasets: [{
+                        label: titleCase(param),
+                        data: paramData,
+                        backgroundColor: getRandomColor(),
+                        borderColor: getRandomColor(),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        x: {
+                            title: { display: true, text: titleCase(xAxisParam) }
+                        },
+                        y: {
+                            beginAtZero: true
                         }
                     }
-                });
-            });
-        
-            const chartResponseDiv = document.getElementById('chart_response');
-
-            // Check if the element exists
-            if (chartResponseDiv) {
-                // Move all child nodes out of the chart_response div
-                while (chartResponseDiv.firstChild) {
-                    chartResponseDiv.parentNode.insertBefore(chartResponseDiv.firstChild, chartResponseDiv);
                 }
+            });
+        });
 
-                // Remove the chart_response div
-                chartResponseDiv.remove();
+        const chartResponseDiv = document.getElementById('chart_response');
+        if (chartResponseDiv) {
+            while (chartResponseDiv.firstChild) {
+                chartResponseDiv.parentNode.insertBefore(chartResponseDiv.firstChild, chartResponseDiv);
             }
+            chartResponseDiv.remove();
         }
     })
     .catch(error => {
-        console.error('There was a problem with the fetch operation:', error);
-        // showError('An error occurred while fetching device data.');
+        console.error('Fetch error during chart generation:', error);
     });
 }
 
-// Call the function with a valid deviceId
+
+// Call the function with a valid deviceId when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     const deviceId = getDeviceIdFromUrl();
     generateChartsForDevice(deviceId);
 });
 
+// Handle the All Data tab click
 document.getElementById('all-data-tab').addEventListener('click', function () {
-    // Update tab styling
     document.getElementById('all-data-tab').classList.add('active-tab');
     document.getElementById('all-data-tab').classList.remove('inactive-tab');
     document.getElementById('alerts-tab').classList.remove('active-tab');
@@ -1370,15 +841,12 @@ document.getElementById('all-data-tab').addEventListener('click', function () {
     document.getElementById('notifications-tab').classList.remove('active-tab');
     document.getElementById('notifications-tab').classList.add('inactive-tab');
 
-    // Update content visibility
     document.getElementById('alerts-content').classList.add('hidden');
     document.getElementById('notifications-content').classList.add('hidden');
     document.getElementById('all-data-content').classList.remove('hidden');
 
-    // Show loader while fetching data
     showLoader();
 
-    // Fetch and display all device data
     const deviceId = getDeviceIdFromUrl();
     fetch(`/device_data_all/${deviceId}`, {
         headers: {
@@ -1393,25 +861,23 @@ document.getElementById('all-data-tab').addEventListener('click', function () {
         data.forEach(record => {
             const row = document.createElement('tr');
             row.className = 'hover:bg-gray-700';
-            
-            // Create time cell
+
             const timeCell = document.createElement('td');
             timeCell.className = 'px-4 py-2 border-b border-gray-600';
             timeCell.textContent = record.time;
-            
-            // Create parameters cell
+
             const paramsCell = document.createElement('td');
             paramsCell.className = 'px-4 py-2 border-b border-gray-600';
             const paramsList = Object.entries(record.data)
                 .map(([key, value]) => `${key}: ${value}`)
                 .join(', ');
             paramsCell.textContent = paramsList;
-            
+
             row.appendChild(timeCell);
             row.appendChild(paramsCell);
             allDataList.appendChild(row);
         });
-        
+
         hideLoader();
     })
     .catch(error => {
@@ -1421,45 +887,37 @@ document.getElementById('all-data-tab').addEventListener('click', function () {
     });
 });
 
-    </script>
-    
-    <script>
-        
-        function startMultiStepTour(steps) {
-            document.addEventListener('DOMContentLoaded', function() {
-                // Define the tour steps
-                var tourSteps = steps.map(step => {
-                    return {
-                        target: step.targetId,
-                        title: step.title,
-                        content: step.content,
-                        placement: step.placement || 'bottom', // Default to 'bottom' if no placement is provided
-                    };
-                });
-        
-                var tour = {
-                    id: "multi-step-tour",
-                    steps: tourSteps,
-                    showPrevButton: true,
-                    scrollTopMargin: 100
-                };
-        
-                // Start the tour
-                hopscotch.startTour(tour);
-        
-                // Scroll to the first target element to bring it into view
-                if (steps.length > 0) {
-                    document.getElementById(steps[0].targetId).scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-            });
+
+// Multi-step Hopscotch Tour Function
+function startMultiStepTour(steps) {
+    document.addEventListener('DOMContentLoaded', function () {
+        const tourSteps = steps.map(step => ({
+            target: step.targetId,
+            title: step.title,
+            content: step.content,
+            placement: step.placement || 'bottom',
+        }));
+
+        const tour = {
+            id: "multi-step-tour",
+            steps: tourSteps,
+            showPrevButton: true,
+            scrollTopMargin: 100
+        };
+
+        hopscotch.startTour(tour);
+
+        if (steps.length > 0) {
+            document.getElementById(steps[0].targetId)
+                .scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
-        
-        //Mimic Demo Device Data Call
-        document.getElementById('send-demo-data-btn').addEventListener('click', function() {
-    // Get the URL from the device-webhook-url element
+    });
+}
+
+// Send demo device data
+document.getElementById('send-demo-data-btn').addEventListener('click', function () {
     const url = document.getElementById('device-webhook-url').textContent;
 
-    // Send a GET request to the URL
     fetch(url)
         .then(response => {
             if (response.ok) {
@@ -1474,85 +932,84 @@ document.getElementById('all-data-tab').addEventListener('click', function () {
         });
 });
 
-
+// Initial onboarding tour
 startMultiStepTour([
-            {
-                targetId: 'device-name',
-                title: 'Device Information',
-                content: 'This section defines the Device Name, followed by Device ID, Device Type & Device Description.',
-                placement: 'right'
-            },
-            {
-                targetId: 'device-webhook-url',
-                title: 'Point Device To This URL',
-                content: 'To start receiving data for this device, make your IoT Device to call this URL format, changing the parameters and their respective values.',
-                placement: 'left'
-            },
-            {
-                targetId: 'send-demo-data-btn',
-                title: 'Initiate Demo Device Ping.',
-                content: 'This demo ping mimics a call from your IoT Device to our platform.',
-                placement: 'left'
-            },
-            {
-                targetId: 'alerts-content',
-                title: 'Set Notification Alerts',
-                content: 'Here you can set notification alerts from your device. This section doesnt work unless you capture device data or ping demo device data.',
-                placement: 'left'
-            },
-            {
-                targetId: 'alert-list',
-                title: 'Alert List',
-                content: 'This will show all the alerts set for this device.',
-                placement: 'bottom'
-            },
-            {
-                targetId: 'notifications-tab',
-                title: 'Notifications List',
-                content: 'Click here to view all the latest notification alerts from your device. This section doesnt work unless you capture any device alerts.',
-                placement: 'left'
-            },
-            {
-                targetId: 'device-data-points',
-                title: 'Device Data Points',
-                content: 'This section will display the last fetched device data parameters and their respective values. This section doesnt work unless you capture any device data or ping demo device data.',
-                placement: 'top'
-            },
-            {
-                targetId: 'chart_device_feed_section',
-                title: 'Device Data Point Charts',
-                content: 'This section will display individual data chart for each parameter from the device data and maps the last 20 records for each parameter.',
-                placement: 'top'
-            },
-            {
-                targetId: 'add-data-btn',
-                title: 'Create A New Device Data Chart',
-                content: 'Click here to add a new device data chart. You can choose custom parameters on both X & Y Axis. This section will not render proper chart unless you capture any device data or ping demo device data.',
-                placement: 'left'
-            }
-            
-        ]);
+    {
+        targetId: 'device-name',
+        title: 'Device Information',
+        content: 'This section defines the Device Name, followed by Device ID, Device Type & Device Description.',
+        placement: 'right'
+    },
+    {
+        targetId: 'device-webhook-url',
+        title: 'Point Device To This URL',
+        content: 'Make your IoT Device call this URL format, changing the parameters and values.',
+        placement: 'left'
+    },
+    {
+        targetId: 'send-demo-data-btn',
+        title: 'Initiate Demo Device Ping',
+        content: 'This mimics a call from your IoT device to our platform.',
+        placement: 'left'
+    },
+    {
+        targetId: 'alerts-content',
+        title: 'Set Notification Alerts',
+        content: 'Create alerts for this device. This only works after data is received.',
+        placement: 'left'
+    },
+    {
+        targetId: 'alert-list',
+        title: 'Alert List',
+        content: 'All configured alerts will be shown here.',
+        placement: 'bottom'
+    },
+    {
+        targetId: 'notifications-tab',
+        title: 'Notifications List',
+        content: 'View all alert notifications here after setting alerts.',
+        placement: 'left'
+    },
+    {
+        targetId: 'device-data-points',
+        title: 'Device Data Points',
+        content: 'Displays the latest data fetched from the device.',
+        placement: 'top'
+    },
+    {
+        targetId: 'chart_device_feed_section',
+        title: 'Device Data Point Charts',
+        content: 'Shows charts for each parameter based on the last 20 records.',
+        placement: 'top'
+    },
+    {
+        targetId: 'add-data-btn',
+        title: 'Create A New Device Data Chart',
+        content: 'Add custom data charts using selected X & Y Axis.',
+        placement: 'left'
+    }
+]);
 
 
-document.getElementById('add-device-btn').addEventListener('click', function(){
+// Additional onboarding tour for Add Device Page
+document.getElementById('add-device-btn')?.addEventListener('click', function () {
     startMultiStepTour([
-            {
-                targetId: 'device-id',
-                title: 'Numerical Unique Device ID',
-                content: 'Add your unique numerical device id.',
-                placement: 'right'
-            },
-            {
-                targetId: 'device-name',
-                title: 'Point Device To This URL',
-                content: 'To start receiving data for this device, make your IoT Device to call this URL format, changing the parameters and their respective values.',
-                placement: 'left'
-            }
-            
-        ]);
+        {
+            targetId: 'device-id',
+            title: 'Numerical Unique Device ID',
+            content: 'Add your unique numerical device id.',
+            placement: 'right'
+        },
+        {
+            targetId: 'device-name',
+            title: 'Point Device To This URL',
+            content: 'To receive data for this device, point your IoT Device to this URL format with appropriate params.',
+            placement: 'left'
+        }
+    ]);
+});
 
- });       
-        </script>
+    </script>
              
 </body>
 
