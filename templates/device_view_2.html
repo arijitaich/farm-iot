@@ -866,8 +866,6 @@ function updateChartsPeriodically() {
             document.getElementById('alerts-tab').classList.remove('inactive-tab');
             document.getElementById('notifications-tab').classList.remove('active-tab');
             document.getElementById('notifications-tab').classList.add('inactive-tab');
-            document.getElementById('data-feed-tab').classList.remove('active-tab');
-            document.getElementById('data-feed-tab').classList.add('inactive-tab');
     
             document.getElementById('alerts-content').classList.remove('hidden');
             document.getElementById('notifications-content').classList.add('hidden');
@@ -879,25 +877,10 @@ function updateChartsPeriodically() {
             document.getElementById('notifications-tab').classList.remove('inactive-tab');
             document.getElementById('alerts-tab').classList.remove('active-tab');
             document.getElementById('alerts-tab').classList.add('inactive-tab');
-            document.getElementById('data-feed-tab').classList.remove('active-tab');
-            document.getElementById('data-feed-tab').classList.add('inactive-tab');
     
             document.getElementById('alerts-content').classList.add('hidden');
             document.getElementById('notifications-content').classList.remove('hidden');
             document.getElementById('data-feed-content').classList.add('hidden');
-        });
-    
-        document.getElementById('data-feed-tab').addEventListener('click', function () {
-            document.getElementById('data-feed-tab').classList.add('active-tab');
-            document.getElementById('data-feed-tab').classList.remove('inactive-tab');
-            document.getElementById('alerts-tab').classList.remove('active-tab');
-            document.getElementById('alerts-tab').classList.add('inactive-tab');
-            document.getElementById('notifications-tab').classList.remove('active-tab');
-            document.getElementById('notifications-tab').classList.add('inactive-tab');
-    
-            document.getElementById('alerts-content').classList.add('hidden');
-            document.getElementById('notifications-content').classList.add('hidden');
-            document.getElementById('data-feed-content').classList.remove('hidden');
         });
     
         // Fetch and update device data
@@ -1244,8 +1227,7 @@ document.getElementById('notifications-tab').addEventListener('click', function 
     document.getElementById('notifications-tab').classList.remove('inactive-tab');
     document.getElementById('alerts-tab').classList.remove('active-tab');
     document.getElementById('alerts-tab').classList.add('inactive-tab');
-    document.getElementById('data-feed-tab').classList.remove('active-tab');
-    document.getElementById('data-feed-tab').classList.add('inactive-tab');
+    
 
     document.getElementById('alerts-content').classList.add('hidden');
     document.getElementById('notifications-content').classList.remove('hidden');
