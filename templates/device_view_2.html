@@ -1553,7 +1553,76 @@ document.getElementById('add-device-btn').addEventListener('click', function(){
 
  });       
         </script>
-             
+        
+<script>
+    // Ensure the element exists before adding an event listener
+    const notificationsTab = document.getElementById('notifications-tab');
+    if (notificationsTab) {
+        notificationsTab.addEventListener('click', function () {
+            notificationsTab.classList.add('active-tab');
+            notificationsTab.classList.remove('inactive-tab');
+
+            const alertsTab = document.getElementById('alerts-tab');
+            if (alertsTab) {
+                alertsTab.classList.remove('active-tab');
+                alertsTab.classList.add('inactive-tab');
+            }
+
+            const dataFeedTab = document.getElementById('data-feed-tab');
+            if (dataFeedTab) {
+                dataFeedTab.classList.remove('active-tab');
+                dataFeedTab.classList.add('inactive-tab');
+            }
+
+            const alertsContent = document.getElementById('alerts-content');
+            if (alertsContent) {
+                alertsContent.classList.add('hidden');
+            }
+
+            const notificationsContent = document.getElementById('notifications-content');
+            if (notificationsContent) {
+                notificationsContent.classList.remove('hidden');
+            }
+
+            const dataFeedContent = document.getElementById('data-feed-content');
+            if (dataFeedContent) {
+                dataFeedContent.classList.add('hidden');
+            }
+
+            // Mark notifications as seen
+            const deviceId = getDeviceIdFromUrl();
+            if (deviceId) {
+                fetch(`/mark-notifications-seen/${deviceId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        showError(data.error);
+                    } else {
+                        updateNotificationCounter(0);
+                    }
+                })
+                .catch(error => console.error('Error marking notifications as seen:', error));
+            }
+        });
+    }
+
+    // Ensure periodic updates only run if the required elements exist
+    setInterval(() => {
+        const deviceId = getDeviceIdFromUrl();
+        if (deviceId) {
+            fetchDeviceData(deviceId);
+            fetchDeviceCharts(deviceId);
+            fetchNotifications(deviceId);
+            generateChartsForDevice(deviceId);
+        }
+    }, 5 * 60 * 1000);
+</script>
+
 </body>
 
 </html>
