@@ -1615,7 +1615,13 @@ document.getElementById('add-device-btn').addEventListener('click', function(){
     setInterval(() => {
         const deviceId = getDeviceIdFromUrl();
         if (deviceId) {
-            fetchDeviceData(deviceId);
+            fetchDeviceData(deviceId)
+                .then(data => {
+                    if (!data || !data.parameters) {
+                        console.error('Device data or parameters are undefined.');
+                    }
+                })
+                .catch(error => console.error('Error fetching device data:', error));
             fetchDeviceCharts(deviceId);
             fetchNotifications(deviceId);
             generateChartsForDevice(deviceId);
