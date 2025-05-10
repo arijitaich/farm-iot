@@ -248,3 +248,40 @@ def get_last_20_device_data(device_id):
         return jsonify(data_list)
     except Exception as e:
         return jsonify({'error': 'Failed to fetch device data', 'details': str(e)}), 500
+
+
+@api_bp.route('/device_data_range/<device_id>', methods=['GET'])
+@login_required
+def get_device_data_range(device_id):
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+
+    # Validate date inputs
+    if not start_date or not end_date:
+        return jsonify({'error': 'Missing start_date or end_date'}), 400
+
+    try:
+        # Parse dates
+        start_date = datetime.fromisoformat(start_date)
+        end_date = datetime.fromisoformat(end_date)
+
+        # Fetch sensor data within the date range
+        records = SensorData.query.filter(
+            SensorData.device_id == device_id,
+            SensorData.timestamp >= start_date,
+            SensorData.timestamp <= end_date
+        ).order_by(SensorData.timestamp.asc()).all()
+
+        data_list = [
+            {
+                'time': record.timestamp.isoformat(),
+                'data': record.data
+            }
+            for record in records
+        ]
+
+        return jsonify(data_list)
+    except ValueError:
+        return jsonify({'error': 'Invalid date format. Use ISO format (YYYY-MM-DD).'}), 400
+    except Exception as e:
+        return jsonify({'error': 'Failed to fetch device data', 'details': str(e)}), 500
