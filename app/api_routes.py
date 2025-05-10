@@ -230,3 +230,21 @@ def get_device_data(device_id):
         return jsonify(response)
     except Exception as e:
         return jsonify({'error': 'Failed to fetch device data', 'details': str(e)}), 500
+
+
+@api_bp.route('/device_data_last_20/<device_id>', methods=['GET'])
+@login_required
+def get_last_20_device_data(device_id):
+    try:
+        # Fetch the last 20 sensor data records for the device
+        records = SensorData.query.filter_by(device_id=device_id).order_by(SensorData.timestamp.desc()).limit(20).all()
+        data_list = [
+            {
+                'time': record.timestamp.isoformat(),
+                'data': record.data
+            }
+            for record in records
+        ]
+        return jsonify(data_list)
+    except Exception as e:
+        return jsonify({'error': 'Failed to fetch device data', 'details': str(e)}), 500
