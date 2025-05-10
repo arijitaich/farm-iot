@@ -53,7 +53,7 @@ def device_view(device_id):
 
 @frontend_bp.route('/device_view_new/<device_id>')
 @login_required  # Use session-based authentication
-def device_view(device_id):
+def device_view_new(device_id):
     email = session.get('user_email')  # Get the logged-in user's email
     try:
         # Fetch the device from the database
