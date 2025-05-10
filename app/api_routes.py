@@ -14,11 +14,16 @@ from functools import wraps
 from sqlalchemy.exc import IntegrityError  # To handle database integrity errors
 from .models import Device  # Assuming a Device model exists
 from .models import SensorData  # Import SensorData model
+from .models import Chart  # Import Chart model
+from .models import Alert  # Import Alert model
+from .models import Notification  # Import Notification model
 
 
 api_bp = Blueprint('api', __name__)
 r = redis.from_url(os.getenv("REDIS_URL"))
 q = Queue(connection=r)
+
+DEVICE_NOT_FOUND_MSG = 'Device not found'
 
 AES_KEY = os.getenv("AES_KEY").encode()
 
@@ -167,6 +172,8 @@ def store_sensor_data():
         # Check if the device exists
         device = Device.query.filter_by(device_id=device_id).first()
         if not device:
+            return jsonify({'error': DEVICE_NOT_FOUND_MSG}), 404
+        if not device:
             return jsonify({'error': 'Device not found'}), 404
 
         # Create a new SensorData record
@@ -303,3 +310,228 @@ def get_all_device_data_records(device_id):
         return jsonify(data_list)
     except Exception as e:
         return jsonify({'error': 'Failed to fetch all device data', 'details': str(e)}), 500
+
+
+@api_bp.route('/data', methods=['GET'])
+def demo_webhook():
+    device_id = request.args.get('device_id')
+    data = {key: request.args.get(key) for key in request.args if key != 'device_id'}
+
+    # Validate mandatory fields
+    if not device_id or not data:
+        return jsonify({'error': 'Missing device_id or data'}), 400
+
+    try:
+        # Check if the device exists
+        device = Device.query.filter_by(device_id=device_id).first()
+        if not device:
+            return jsonify({'error': 'Device not found'}), 404
+
+        # Create a new SensorData record
+        new_sensor_data = SensorData(
+            device_id=device_id,
+            timestamp=datetime.utcnow(),
+            data=data
+        )
+        db.session.add(new_sensor_data)
+        db.session.commit()
+
+        return jsonify({'message': 'Demo data pushed successfully'}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'An error occurred', 'details': str(e)}), 500
+
+
+@api_bp.route('/get-charts/<device_id>', methods=['GET'])
+@login_required
+def get_charts(device_id):
+    try:
+        # Fetch saved chart configurations for the device
+        charts = Chart.query.filter_by(device_id=device_id).order_by(Chart.position.asc()).all()
+        chart_list = [
+            {
+                'id': chart.id,
+                'chart_name': chart.chart_name,
+                'chart_type': chart.chart_type,
+                'x_axis_params': chart.x_axis_params,
+                'y_axis_params': chart.y_axis_params,
+                'is_live': chart.is_live,
+                'position': chart.position
+            }
+            for chart in charts
+        ]
+        return jsonify({'charts': chart_list})
+    except Exception as e:
+        return jsonify({'error': 'Failed to fetch chart configurations', 'details': str(e)}), 500
+
+
+@api_bp.route('/create-chart', methods=['POST'])
+@login_required
+def create_chart():
+    req = request.json
+    device_id = req.get('device_id')
+    chart_name = req.get('chart_name')
+    chart_type = req.get('chart_type')
+    x_axis_params = req.get('x_axis_params')
+    y_axis_params = req.get('y_axis_params')
+    is_live = req.get('is_live', False)
+    position = req.get('position')
+
+    # Validate mandatory fields
+    if not device_id or not chart_name or not chart_type or not x_axis_params or not y_axis_params or position is None:
+        return jsonify({'error': 'Missing mandatory fields'}), 400
+
+    try:
+        # Check if the device exists
+        device = Device.query.filter_by(device_id=device_id).first()
+        if not device:
+            return jsonify({'error': 'Device not found'}), 404
+
+        # Create and save the new chart configuration
+        new_chart = Chart(
+            device_id=device_id,
+            chart_name=chart_name.strip(),
+            chart_type=chart_type.strip(),
+            x_axis_params=x_axis_params,
+            y_axis_params=y_axis_params,
+            is_live=is_live,
+            position=position
+        )
+        db.session.add(new_chart)
+        db.session.commit()
+
+        return jsonify({'message': 'Chart created successfully'}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'An error occurred while creating the chart', 'details': str(e)}), 500
+
+
+@api_bp.route('/delete-chart/<chart_id>', methods=['POST'])
+@login_required
+def delete_chart(chart_id):
+    try:
+        # Fetch the chart by ID
+        chart = Chart.query.filter_by(id=chart_id).first()
+        if not chart:
+            return jsonify({'error': 'Chart not found'}), 404
+
+        # Delete the chart
+        db.session.delete(chart)
+        db.session.commit()
+
+        return jsonify({'message': 'Chart deleted successfully'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'An error occurred while deleting the chart', 'details': str(e)}), 500
+
+
+@api_bp.route('/get-alerts/<device_id>', methods=['GET'])
+@login_required
+def get_alerts(device_id):
+    try:
+        # Fetch alerts for the specified device
+        alerts = Alert.query.filter_by(device_id=device_id).order_by(Alert.timestamp.desc()).all()
+        alert_list = [
+            {
+                'id': alert.id,
+                'name': alert.alert_type,
+                'parameter': alert.message,
+                'timestamp': alert.timestamp.isoformat()
+            }
+            for alert in alerts
+        ]
+        return jsonify({'alerts': alert_list})
+    except Exception as e:
+        return jsonify({'error': 'Failed to fetch alerts', 'details': str(e)}), 500
+
+
+@api_bp.route('/create_alert', methods=['POST'])
+@login_required
+def create_alert():
+    req = request.json
+    device_id = req.get('device_id')
+    alert_name = req.get('alert_name')
+    alert_parameter = req.get('alert_parameter')
+    alert_value = req.get('alert_value')
+    alert_gate = req.get('alert_gate')
+
+    # Validate mandatory fields
+    if not device_id or not alert_name or not alert_parameter or not alert_value or not alert_gate:
+        return jsonify({'error': 'Missing mandatory fields'}), 400
+
+    try:
+        # Check if the device exists
+        device = Device.query.filter_by(device_id=device_id).first()
+        if not device:
+            return jsonify({'error': 'Device not found'}), 404
+
+        # Create and save the new alert
+        new_alert = Alert(
+            device_id=device_id,
+            alert_type=alert_name.strip(),
+            message=f"{alert_parameter} {alert_gate} {alert_value}"
+        )
+        db.session.add(new_alert)
+        db.session.commit()
+
+        return jsonify({'message': 'Alert created successfully'}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'An error occurred while creating the alert', 'details': str(e)}), 500
+
+
+@api_bp.route('/delete_alert/<alert_id>', methods=['POST'])
+@login_required
+def delete_alert(alert_id):
+    try:
+        # Fetch the alert by ID
+        alert = Alert.query.filter_by(id=alert_id).first()
+        if not alert:
+            return jsonify({'error': 'Alert not found'}), 404
+
+        # Delete the alert
+        db.session.delete(alert)
+        db.session.commit()
+
+        return jsonify({'message': 'Alert deleted successfully'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'An error occurred while deleting the alert', 'details': str(e)}), 500
+
+
+@api_bp.route('/get-notifications/<device_id>', methods=['GET'])
+@login_required
+def get_notifications(device_id):
+    try:
+        # Fetch notifications for the specified device
+        notifications = Notification.query.filter_by(device_id=device_id).order_by(Notification.timestamp.desc()).all()
+        unseen_count = Notification.query.filter_by(device_id=device_id, seen=False).count()
+
+        notification_list = [
+            {
+                'id': notification.id,
+                'alert_name': notification.alert_name,
+                'message': notification.message,
+                'time': notification.timestamp.isoformat(),
+                'seen': notification.seen
+            }
+            for notification in notifications
+        ]
+
+        return jsonify({'notifications': notification_list, 'unseen_count': unseen_count})
+    except Exception as e:
+        return jsonify({'error': 'Failed to fetch notifications', 'details': str(e)}), 500
+
+
+@api_bp.route('/mark-notifications-seen/<device_id>', methods=['POST'])
+@login_required
+def mark_notifications_seen(device_id):
+    try:
+        # Update all unseen notifications for the device to seen
+        Notification.query.filter_by(device_id=device_id, seen=False).update({'seen': True})
+        db.session.commit()
+
+        return jsonify({'message': 'All notifications marked as seen'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'Failed to mark notifications as seen', 'details': str(e)}), 500

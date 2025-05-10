@@ -1179,21 +1179,21 @@ function fetchNotifications(device_id) {
             });
         }
 
-        function populateNotificationsList(notifications) {
-            const notificationsList = document.getElementById('notifications-list');
-            notificationsList.innerHTML = ''; // Clear any existing notifications
+function populateNotificationsList(notifications) {
+    const notificationsList = document.getElementById('notifications-list');
+    notificationsList.innerHTML = ''; // Clear any existing notifications
 
-            notifications.forEach(notification => {
-                const listItem = document.createElement('li');
-                listItem.className = 'bg-gray-700 p-2 rounded text-white';
-                listItem.innerHTML = `
-                    <strong>${notification.alert_name}</strong><br>
-                    ${notification.message}<br>
-                    <small>${notification.time}</small>
-                `;
-                notificationsList.appendChild(listItem);
-            });
-        }
+    notifications.forEach(notification => {
+        const listItem = document.createElement('li');
+        listItem.className = 'bg-gray-700 p-2 rounded text-white';
+        listItem.innerHTML = `
+            <strong>${notification.alert_name}</strong><br>
+            ${notification.message}<br>
+            <small>${notification.time}</small>
+        `;
+        notificationsList.appendChild(listItem);
+    });
+}
 
 
 function updateNotificationList(notifications) {

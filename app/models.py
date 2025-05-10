@@ -38,3 +38,21 @@ class Alert(db.Model):
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     alert_type = db.Column(db.String(100))
     message = db.Column(db.Text)
+
+class Chart(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    device_id = db.Column(db.String(255), db.ForeignKey('device.device_id'), nullable=False)
+    chart_name = db.Column(db.String(255), nullable=False)
+    chart_type = db.Column(db.String(50), nullable=False)
+    x_axis_params = db.Column(db.JSON, nullable=False)  # Store X-axis parameters
+    y_axis_params = db.Column(db.JSON, nullable=False)  # Store Y-axis parameters
+    is_live = db.Column(db.Boolean, default=False)
+    position = db.Column(db.Integer, nullable=False)  # Position for ordering
+
+class Notification(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    device_id = db.Column(db.String(255), db.ForeignKey('device.device_id'), nullable=False)
+    alert_name = db.Column(db.String(255), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    seen = db.Column(db.Boolean, default=False)
