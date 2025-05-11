@@ -361,7 +361,7 @@ def get_all_device_data_records(device_id):
 
 
 @api_bp.route('/data', methods=['GET'])
-def demo_webhook():
+def device_webhook():
     device_id = request.args.get('device_id')
     data = {key: request.args.get(key) for key in request.args if key != 'device_id'}
 
@@ -384,7 +384,50 @@ def demo_webhook():
         db.session.add(new_sensor_data)
         db.session.commit()
 
+        # ✅ Check alerts and create notifications
+        alerts = Alert.query.filter_by(device_id=device_id).all()
+        timestamp_now = datetime.utcnow()
+
+        for alert in alerts:
+            parts = alert.message.split()
+            if len(parts) < 3:
+                continue
+            param, operator, threshold_str = parts[0], parts[1], parts[-1]
+            try:
+                threshold = float(threshold_str)
+            except ValueError:
+                continue
+
+            value = data.get(param)
+            if value is not None:
+                try:
+                    value = float(value)
+                except ValueError:
+                    continue
+
+                trigger = False
+                if operator == "Greater" and value > threshold:
+                    trigger = True
+                elif operator == "Less" and value < threshold:
+                    trigger = True
+                elif operator == "Equal" and value == threshold:
+                    trigger = True
+
+                if trigger:
+                    notification = Notification(
+                        alert_id=alert.id,
+                        device_id=device_id,
+                        alert_name=alert.alert_type,
+                        message=alert.message,
+                        timestamp=timestamp_now,
+                        seen=False
+                    )
+                    db.session.add(notification)
+
+        db.session.commit()  # commit any notifications
+
         return jsonify({'message': 'Demo data pushed successfully'}), 201
+
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': 'An error occurred', 'details': str(e)}), 500
