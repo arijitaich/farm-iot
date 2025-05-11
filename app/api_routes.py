@@ -480,6 +480,7 @@ def create_alert():
         db.session.add(new_alert)
         db.session.commit()
 
+
         # Create a notification for the new alert
         new_notification = Notification(
             device_id=device_id,
