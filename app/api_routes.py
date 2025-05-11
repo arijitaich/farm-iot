@@ -84,6 +84,8 @@ def get_devices():
     try:
         # Fetch devices from the database
         devices = Device.query.all()  # Modify this query if devices are linked to users
+        thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+
         device_list = [
             {
                 'device_id': device.device_id,
@@ -91,7 +93,11 @@ def get_devices():
                 'device_type': device.device_type,
                 'device_description': device.device_description,
                 'device_coordinates': device.device_coordinates,
-                'registered_at': device.registered_at.isoformat()
+                'registered_at': device.registered_at.isoformat(),
+                'is_active': SensorData.query.filter(
+                    SensorData.device_id == device.device_id,
+                    SensorData.timestamp >= thirty_days_ago
+                ).count() > 0  # Check if there is data in the last 30 days
             }
             for device in devices
         ]
