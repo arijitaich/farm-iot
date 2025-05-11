@@ -564,4 +564,4 @@ def overall_stats():
             'inactive_devices': inactive_devices
         })
     except Exception as e:
-        return jsonify({'error': 'Failed to fetch overall stats - details': str(e)}), 500
+        return jsonify({'error': f'Failed to fetch overall stats - details: {str(e)}'}), 500
