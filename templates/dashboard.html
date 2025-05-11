@@ -334,12 +334,19 @@
             deviceCards.innerHTML = '';
 
             devices.forEach(device => {
+                const isActive = device.is_active; // Assuming the backend provides an `is_active` field
+                const statusLabel = isActive
+                    ? '<span class="bg-green-500 text-white text-xs px-2 py-1 rounded-full">Active</span>'
+                    : '<span class="bg-red-500 text-white text-xs px-2 py-1 rounded-full">Inactive</span>';
+
                 const deviceCard = document.createElement('div');
-                deviceCard.className = 'bg-gradient-to-r from-green-400 to-blue-500 p-4 rounded-lg shadow-lg text-black hover-effect ';
+                deviceCard.className = 'bg-gradient-to-r from-green-400 to-blue-500 p-4 rounded-lg shadow-lg text-black hover-effect';
                 deviceCard.innerHTML = `
                     <a href="/device_view/${device.device_id}" class="block no-underline text-black">
-                        <h2 class="text-lg font-semibold mb-2">${device.device_name}</h2>
-                        
+                        <div class="flex justify-between items-center">
+                            <h2 class="text-lg font-semibold mb-2">${device.device_name}</h2>
+                            ${statusLabel}
+                        </div>
                         <p>Device ID: ${device.device_id}</p>
                         <p>Type: ${device.device_type}</p>
                         <p>Description: ${device.device_description}</p>
