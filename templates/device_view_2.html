@@ -1384,6 +1384,9 @@ document.getElementById('all-data-tab').addEventListener('click', function () {
         const allDataList = document.getElementById('all-data-list');
         allDataList.innerHTML = '';
 
+        // Sort data in descending order of timestamp
+        data.sort((a, b) => new Date(b.time) - new Date(a.time));
+
         data.forEach(record => {
             const row = document.createElement('tr');
             row.className = 'hover:bg-gray-700';
