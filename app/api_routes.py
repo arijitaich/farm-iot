@@ -594,7 +594,10 @@ def delete_alert(alert_id):
         if not alert:
             return jsonify({'error': 'Alert not found'}), 404
 
-        # Delete the alert
+        # ✅ Delete all notifications linked to this alert first
+        Notification.query.filter_by(alert_id=alert.id).delete()
+
+        # ✅ Then delete the alert
         db.session.delete(alert)
         db.session.commit()
 
@@ -602,7 +605,6 @@ def delete_alert(alert_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': 'An error occurred while deleting the alert', 'details': str(e)}), 500
-
 
 @api_bp.route('/get-notifications/<device_id>', methods=['GET'])
 @login_required
