@@ -1267,26 +1267,32 @@ function generateChartsForDevice(deviceId) {
         if (data.error) {
             showError(data.error);
         } else {
-            if (data.length === 0) {
+            if (!data || data.length === 0) {
                 console.log('No data available for the selected device.');
                 return;
             }
 
             const xAxisParam = 'time'; // Assuming time is always the X-axis parameter
-            const yAxisParams = Object.keys(data[0].data); // Dynamically get Y-axis parameters from the first data point
+            const yAxisParams = Object.keys(data[0]?.data || {}); // Safely access data[0].data
             const xAxisValues = data.map(point => point[xAxisParam]);
 
+            const chartResponseDiv = document.getElementById('chart_response');
+            if (!chartResponseDiv) {
+                console.error('chart_response element not found.');
+                return;
+            }
+
             // Clear previous charts if any
-            document.getElementById('chart_response').innerHTML = '';
+            chartResponseDiv.innerHTML = '';
 
             // Create a wrapper div for all charts
             const gridContainer = document.createElement('div');
             gridContainer.className = 'grid grid-cols-1 md:grid-cols-3 gap-4';
-            document.getElementById('chart_response').appendChild(gridContainer);
+            chartResponseDiv.appendChild(gridContainer);
 
             // Create a chart for each Y-axis parameter
             yAxisParams.forEach(param => {
-                const paramData = data.map(point => point.data[param]);
+                const paramData = data.map(point => point.data[param] || 0); // Handle missing values with default 0
 
                 // Create a container for each chart
                 const chartContainer = document.createElement('div');
@@ -1343,7 +1349,7 @@ function generateChartsForDevice(deviceId) {
     })
     .catch(error => {
         console.error('There was a problem with the fetch operation:', error);
-        // showError('An error occurred while fetching device data.');
+        showError('An error occurred while fetching device data.');
     });
 }
 
