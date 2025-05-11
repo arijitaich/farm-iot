@@ -18,7 +18,6 @@ from .models import Chart  # Import Chart model
 from .models import Alert  # Import Alert model
 from .models import Notification  # Import Notification model
 
-
 api_bp = Blueprint('api', __name__)
 r = redis.from_url(os.getenv("REDIS_URL"))
 q = Queue(connection=r)
@@ -190,6 +189,49 @@ def store_sensor_data():
         )
         db.session.add(new_sensor_data)
         db.session.commit()
+
+
+        # After sensor data is saved, check alerts
+        alerts = Alert.query.filter_by(device_id=device_id).all()
+        timestamp_now = datetime.utcnow()
+
+        for alert in alerts:
+            param = alert.message.split()[0]        # e.g. "batper"
+            operator = alert.message.split()[1]     # e.g. "Greater"
+            threshold = float(alert.message.split()[-1])  # e.g. 90
+
+            # Only if param exists in new sensor data
+            value = data.get(param)
+            if value is not None:
+                try:
+                    value = float(value)
+                except ValueError:
+                    continue  # skip non-numeric values
+
+                # Apply logic
+                trigger = False
+                if operator == "Greater" and value > threshold:
+                    trigger = True
+                elif operator == "Less" and value < threshold:
+                    trigger = True
+                elif operator == "Equal" and value == threshold:
+                    trigger = True
+
+                # Create Notification if condition is met
+                if trigger:
+                    new_notification = Notification(
+                        alert_id=alert.id,
+                        device_id=device_id,
+                        alert_name=alert.alert_type,
+                        message=alert.message,
+                        timestamp=timestamp_now,
+                        seen=False
+                    )
+                    db.session.add(new_notification)
+
+        # Commit any notifications created
+        db.session.commit()
+
 
         return jsonify({'message': 'Sensor data stored successfully'}), 201
     except Exception as e:
@@ -478,6 +520,9 @@ def create_alert():
             message=f"{alert_parameter} {alert_gate} {alert_value}"
         )
         db.session.add(new_alert)
+
+    
+
         db.session.commit()
 
 
