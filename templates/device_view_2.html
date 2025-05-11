@@ -539,8 +539,8 @@ document.getElementById('add-data-chart-form').addEventListener('submit', functi
         return;
     }
 
-    if (!xAxisParam || !yAxisParams) {
-        alert('Please select an option for both the axis.');
+    if (!xAxisParam || yAxisParams.length === 0) {
+        alert('Please select an option for both the X-axis and Y-axis.');
         return;
     }
 
@@ -569,13 +569,12 @@ document.getElementById('add-data-chart-form').addEventListener('submit', functi
                 return;
             }
 
-            const xAxisValues = data.map(point => point.data[xAxisParam]);
-            const yAxisValues = data.map(point => {
-                return yAxisParams.reduce((acc, param) => {
-                    acc[param] = point.data[param];
-                    return acc;
-                }, {});
-            });
+            // Extract X-axis values (timestamps) and Y-axis datasets
+            const xAxisValues = data.map(point => point.time); // Use 'time' for X-axis
+            const yAxisDatasets = yAxisParams.map(param => ({
+                label: param,
+                data: data.map(point => point.data[param] || 0) // Handle missing values with default 0
+            }));
 
             fetch('/create-chart', {
                 method: 'POST',
@@ -587,9 +586,9 @@ document.getElementById('add-data-chart-form').addEventListener('submit', functi
                     device_id: deviceId,
                     chart_name: chartName,
                     chart_type: chartType,
-                    x_axis_params: { label: xAxisParam, data: xAxisValues }, // Include label for x_axis_params
+                    x_axis_params: { label: xAxisParam, data: xAxisValues },
                     is_live: liveData,
-                    y_axis_params: yAxisParams.map(param => ({ label: param, data: yAxisValues.map(value => value[param]) })),
+                    y_axis_params: yAxisDatasets,
                     position: document.querySelectorAll('#device-charts > div').length
                 })
             })
@@ -602,8 +601,7 @@ document.getElementById('add-data-chart-form').addEventListener('submit', functi
             .then(data => {
                 if (data.error) {
                     showError(data.error);
-                } else 
-                {
+                } else {
                     fetchDeviceCharts(deviceId);
                     generateChartsForDevice(deviceId);
                     document.getElementById('add-data-chart-modal').classList.add('hidden');
@@ -617,7 +615,7 @@ document.getElementById('add-data-chart-form').addEventListener('submit', functi
     })
     .catch(error => {
         console.error('There was a problem with the fetch operation:', error);
-        // showError('An error occurred while fetching device data.');
+        showError('An error occurred while fetching device data.');
     });
 });
 
