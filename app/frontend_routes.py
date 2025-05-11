@@ -14,7 +14,7 @@ def dashboard():
     return render_template("dashboard.html")
 
 @frontend_bp.route('/profile_settings')
-@token_required
+@login_required  # Use session-based authentication
 def profile_settings():
     return render_template("profile_settings.html")
 
