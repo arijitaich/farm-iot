@@ -17,6 +17,7 @@ from .models import SensorData  # Import SensorData model
 from .models import Chart  # Import Chart model
 from .models import Alert  # Import Alert model
 from .models import Notification  # Import Notification model
+from sqlalchemy import func  
 
 api_bp = Blueprint('api', __name__)
 r = redis.from_url(os.getenv("REDIS_URL"))
@@ -96,7 +97,8 @@ def get_devices():
                 'is_active': SensorData.query.filter(
                     SensorData.device_id == device.device_id,
                     SensorData.timestamp >= thirty_days_ago
-                ).count() > 0  # Check if there is data in the last 30 days
+                ).count() > 0,
+                'unseen_notifications': Notification.query.filter_by(device_id=device.device_id, seen=False).count()
             }
             for device in devices
         ]
