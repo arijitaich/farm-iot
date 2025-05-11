@@ -571,3 +571,36 @@ def overall_stats():
         })
     except Exception as e:
         return jsonify({'error': f'Failed to fetch overall stats - details: {str(e)}'}), 500
+
+
+@api_bp.route('/edit-device', methods=['POST'])
+@login_required
+def edit_device():
+    req = request.json
+    device_id = req.get('device_id')
+    device_name = req.get('device_name')
+    device_type = req.get('device_type')
+    device_description = req.get('device_description')
+    device_coordinates = req.get('device_coordinates')
+
+    # Validate mandatory fields
+    if not device_id or not device_name or not device_type or not device_coordinates:
+        return jsonify({'error': 'Missing mandatory fields'}), 400
+
+    try:
+        # Fetch the device by ID
+        device = Device.query.filter_by(device_id=device_id).first()
+        if not device:
+            return jsonify({'error': 'Device not found'}), 404
+
+        # Update the device details
+        device.device_name = device_name.strip()
+        device.device_type = device_type.strip()
+        device.device_description = device_description.strip()
+        device.device_coordinates = device_coordinates.strip()
+        db.session.commit()
+
+        return jsonify({'message': 'Device updated successfully'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'An error occurred while updating the device', 'details': str(e)}), 500

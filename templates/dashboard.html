@@ -271,6 +271,35 @@
         </div>
     </div>
 
+    <div id="edit-device-modal" class="fixed inset-0 flex items-center justify-center text-black bg-gray-900 bg-opacity-50 hidden">
+        <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-lg mx-4">
+            <h2 class="text-xl font-semibold mb-4" style="color: black;">Edit Device</h2>
+            <form id="edit-device-form">
+                <input type="hidden" id="edit-device-id" name="device_id"> <!-- Hidden field for device ID -->
+                <div class="mb-4">
+                    <label for="edit-device-name" class="block text-gray-700">Device Name</label>
+                    <input type="text" id="edit-device-name" name="device_name" class="w-full px-3 py-2 border rounded-lg" required>
+                </div>
+                <div class="mb-4">
+                    <label for="edit-device-type" class="block text-gray-700">Device Type</label>
+                    <input type="text" id="edit-device-type" name="device_type" class="w-full px-3 py-2 border rounded-lg" required>
+                </div>
+                <div class="mb-4">
+                    <label for="edit-device-description" class="block text-gray-700">Device Description</label>
+                    <textarea id="edit-device-description" name="device_description" class="w-full px-3 py-2 border rounded-lg" required></textarea>
+                </div>
+                <div class="mb-4">
+                    <label for="edit-device-coordinates" class="block text-gray-700">Device Coordinates</label>
+                    <input type="text" id="edit-device-coordinates" name="device_coordinates" class="w-full px-3 py-2 border rounded-lg" required>
+                </div>
+                <div class="flex justify-end">
+                    <button type="button" id="cancel-edit-device" class="bg-gray-500 text-white px-4 py-2 rounded-lg mr-2">Cancel</button>
+                    <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-lg">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         function showError(message) {
             const errorMessage = document.getElementById('error-message');
@@ -351,11 +380,36 @@
                         <p>Type: ${device.device_type}</p>
                         <p>Description: ${device.device_description}</p>
                     </a>
-                    <button class="delete-device-btn bg-red-500 text-white px-2 py-1 rounded text-sm mt-2" data-device-id="${device.device_id}">
-                        Delete
-                    </button>
+                    <div class="flex space-x-2 mt-2">
+                        <button class="edit-device-btn bg-yellow-500 text-white px-2 py-1 rounded text-sm" data-device-id="${device.device_id}" data-device-name="${device.device_name}" data-device-type="${device.device_type}" data-device-description="${device.device_description}" data-device-coordinates="${device.device_coordinates}">
+                            Edit
+                        </button>
+                        <button class="delete-device-btn bg-red-500 text-white px-2 py-1 rounded text-sm" data-device-id="${device.device_id}">
+                            Delete
+                        </button>
+                    </div>
                 `;
                 deviceCards.appendChild(deviceCard);
+            });
+
+            document.querySelectorAll('.edit-device-btn').forEach(button => {
+                button.addEventListener('click', function () {
+                    const deviceId = this.getAttribute('data-device-id');
+                    const deviceName = this.getAttribute('data-device-name');
+                    const deviceType = this.getAttribute('data-device-type');
+                    const deviceDescription = this.getAttribute('data-device-description');
+                    const deviceCoordinates = this.getAttribute('data-device-coordinates');
+
+                    // Prepopulate the modal fields with the device data
+                    document.getElementById('edit-device-id').value = deviceId;
+                    document.getElementById('edit-device-name').value = deviceName;
+                    document.getElementById('edit-device-type').value = deviceType;
+                    document.getElementById('edit-device-description').value = deviceDescription;
+                    document.getElementById('edit-device-coordinates').value = deviceCoordinates;
+
+                    // Show the edit modal
+                    document.getElementById('edit-device-modal').classList.remove('hidden');
+                });
             });
 
             document.querySelectorAll('.delete-device-btn').forEach(button => {
@@ -531,6 +585,50 @@
         // Fetch devices on page load and every 5 minutes
         fetchDevices();
         setInterval(fetchDevices, 5 * 60 * 1000);
+
+        document.getElementById('cancel-edit-device').addEventListener('click', function () {
+            document.getElementById('edit-device-modal').classList.add('hidden');
+        });
+
+        document.getElementById('edit-device-form').addEventListener('submit', function (event) {
+            event.preventDefault();
+            showLoader();
+
+            const deviceId = document.getElementById('edit-device-id').value;
+            const deviceName = document.getElementById('edit-device-name').value;
+            const deviceType = document.getElementById('edit-device-type').value;
+            const deviceDescription = document.getElementById('edit-device-description').value;
+            const deviceCoordinates = document.getElementById('edit-device-coordinates').value;
+
+            fetch('/edit-device', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    device_id: deviceId,
+                    device_name: deviceName,
+                    device_type: deviceType,
+                    device_description: deviceDescription,
+                    device_coordinates: deviceCoordinates
+                })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    hideLoader();
+                    if (data.error) {
+                        showError(`Failed to update device: ${data.error}`);
+                    } else {
+                        showSuccess('Device updated successfully.');
+                        fetchDevices();
+                        document.getElementById('edit-device-modal').classList.add('hidden');
+                    }
+                })
+                .catch(error => {
+                    hideLoader();
+                    showError('An error occurred. Please try again.');
+                });
+        });
     </script>
 
 <script>
