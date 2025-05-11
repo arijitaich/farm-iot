@@ -52,6 +52,7 @@ class Chart(db.Model):
 
 class Notification(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    alert_id = db.Column(db.Integer, db.ForeignKey('alert.id'), nullable=False)  # ✅ This is the missing link
     device_id = db.Column(db.String(255), db.ForeignKey('device.device_id'), nullable=False)
     alert_name = db.Column(db.String(255), nullable=False)
     message = db.Column(db.Text, nullable=False)
