@@ -535,3 +535,33 @@ def mark_notifications_seen(device_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': 'Failed to mark notifications as seen', 'details': str(e)}), 500
+
+
+@api_bp.route('/overall-stats', methods=['GET'])
+@login_required
+def overall_stats():
+    try:
+        # Fetch total devices
+        total_devices = Device.query.count()
+
+        # Fetch active devices (devices with data in the last 30 days)
+        thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+        active_devices = (
+            db.session.query(Device)
+            .join(SensorData, Device.device_id == SensorData.device_id)
+            .filter(SensorData.timestamp >= thirty_days_ago)
+            .distinct(Device.device_id)
+            .count()
+        )
+
+        # Calculate inactive devices
+        inactive_devices = total_devices - active_devices
+
+        # Return the stats
+        return jsonify({
+            'total_devices': total_devices,
+            'active_devices': active_devices,
+            'inactive_devices': inactive_devices
+        })
+    except Exception as e:
+        return jsonify({'error': 'Failed to fetch overall stats', 'details': str(e)}), 500
