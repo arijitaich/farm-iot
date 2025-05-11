@@ -588,10 +588,15 @@ def edit_device():
         return jsonify({'error': 'Missing mandatory fields'}), 400
 
     try:
-        # Fetch the device by ID
-        device = Device.query.filter_by(device_id=device_id).first()
+        # Fetch the logged-in user
+        user = User.query.filter_by(email=session['user_email']).first()
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+
+        # Fetch the device by ID and ensure it belongs to the logged-in user
+        device = Device.query.filter_by(device_id=device_id, user_id=user.id).first()
         if not device:
-            return jsonify({'error': 'Device not found'}), 404
+            return jsonify({'error': 'Device not found or you do not have permission to edit this device'}), 403
 
         # Update the device details
         device.device_name = device_name.strip()
