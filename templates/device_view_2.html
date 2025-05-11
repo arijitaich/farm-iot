@@ -1016,7 +1016,7 @@ function updateChartsPeriodically() {
                 const alertItem = document.createElement('li');
                 alertItem.className = 'bg-gray-700 p-2 rounded flex justify-between items-center text-white';
                 alertItem.innerHTML = `
-                    <span>${alert.name} - ${alert.parameter}: ${alert.value}</span>
+                    <span>${alert.name} - ${alert.parameter}</span>
                     <button class="bg-red-500 text-white px-2 py-1 rounded delete-alert-btn" data-alert-id="${alert.id}">Delete</button>
                 `;
                 alertList.appendChild(alertItem);
