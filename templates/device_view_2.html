@@ -1149,33 +1149,20 @@ function getDeviceIdFromUrl() {
 }
 
 function fetchNotifications(device_id) {
-            const token = localStorage.getItem('token'); // Retrieve the token from local storage
-            // console.log('Fetching notifications for device_id:', device_id); // Log the device ID
-            // console.log('Using token:', token); // Log the token being used
-
-            $.ajax({
-                url: `/get-notifications/${device_id}`,
-                type: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                },
-                success: function(data, textStatus, jqXHR) {
-                    // console.log('AJAX call succeeded');
-                    // console.log('Status:', textStatus);
-                    // console.log('Data:', data); // Log the raw response string
-                    populateNotificationsList(data.notifications);
-                    updateNotificationCounter(data.unseen_count);
-                },
-                error: function(jqXHR, textStatus, errorThrown) {
-                    console.log('AJAX call failed');
-                    console.error('Error:', textStatus, errorThrown);
-                }
-            });
-        }
+    fetch(`/get-notifications/${device_id}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.notifications) {
+                populateNotificationsList(data.notifications);
+                updateNotificationCounter(data.unseen_count);
+            }
+        })
+        .catch(error => console.error('Error fetching notifications:', error));
+}
 
 function populateNotificationsList(notifications) {
     const notificationsList = document.getElementById('notifications-list');
-    notificationsList.innerHTML = ''; // Clear any existing notifications
+    notificationsList.innerHTML = ''; // Clear existing notifications
 
     notifications.forEach(notification => {
         const listItem = document.createElement('li');
@@ -1189,6 +1176,21 @@ function populateNotificationsList(notifications) {
     });
 }
 
+function updateNotificationCounter(count) {
+    const notificationCounter = document.getElementById('notification-counter');
+    if (count > 0) {
+        notificationCounter.textContent = count;
+        notificationCounter.classList.remove('hidden');
+    } else {
+        notificationCounter.classList.add('hidden');
+    }
+}
+
+// Fetch notifications on page load
+document.addEventListener('DOMContentLoaded', () => {
+    const deviceId = getDeviceIdFromUrl();
+    fetchNotifications(deviceId);
+});
 
 function updateNotificationList(notifications) {
     

@@ -480,7 +480,17 @@ def create_alert():
         db.session.add(new_alert)
         db.session.commit()
 
-        return jsonify({'message': 'Alert created successfully'}), 201
+        # Create a notification for the new alert
+        new_notification = Notification(
+            device_id=device_id,
+            alert_name=alert_name.strip(),
+            message=f"Alert created: {alert_parameter} {alert_gate} {alert_value}",
+            seen=False
+        )
+        db.session.add(new_notification)
+        db.session.commit()
+
+        return jsonify({'message': 'Alert and notification created successfully'}), 201
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': 'An error occurred while creating the alert', 'details': str(e)}), 500

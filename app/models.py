@@ -38,6 +38,7 @@ class Alert(db.Model):
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     alert_type = db.Column(db.String(100))
     message = db.Column(db.Text)
+    notifications = db.relationship('Notification', backref='alert', lazy=True)  # Add this relationship
 
 class Chart(db.Model):
     id = db.Column(db.Integer, primary_key=True)
