@@ -547,6 +547,7 @@ document.getElementById('add-data-chart-form').addEventListener('submit', functi
     let fetchUrl = `/device_data_range/${deviceId}?start_date=${startDate}&end_date=${endDate}`;
     if (liveData) {
         fetchUrl = `/device_data_last_20/${deviceId}`;
+        
     }
 
     fetch(fetchUrl, {
@@ -1584,6 +1585,24 @@ startMultiStepTour([
                 .catch(error => console.error('Error fetching device data:', error));
         }
     }, 5 * 60 * 1000);
+</script>
+
+<script>
+function toggleDateRangeFields() {
+    const liveDataCheckbox = document.getElementById('live-data');
+    const dateRangeFields = document.getElementById('date-range-fields');
+    if (liveDataCheckbox.checked) {
+        dateRangeFields.classList.add('hidden');
+    } else {
+        dateRangeFields.classList.remove('hidden');
+    }
+}
+
+// Attach the toggle function to the live-data checkbox
+document.getElementById('live-data').addEventListener('change', toggleDateRangeFields);
+
+// Initialize the visibility on page load
+document.addEventListener('DOMContentLoaded', toggleDateRangeFields);
 </script>
 
 </body>
