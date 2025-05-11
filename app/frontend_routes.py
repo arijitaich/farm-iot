@@ -43,7 +43,7 @@ def device_view(device_id):
 
         # Pass the device data to the template
         return render_template(
-            "device_view.html",
+            "device_view_2.html",
             device=[device.device_id, device.device_name, device.device_type, device.device_description],
             data_points=data_points
         )
