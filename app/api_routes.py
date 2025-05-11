@@ -609,3 +609,34 @@ def edit_device():
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': 'An error occurred while updating the device', 'details': str(e)}), 500
+
+
+@api_bp.route('/change-password', methods=['POST'])
+@login_required
+def change_password():
+    req = request.json
+    current_password = req.get('current_password')
+    new_password = req.get('new_password')
+
+    # Validate mandatory fields
+    if not current_password or not new_password:
+        return jsonify({'error': 'Missing current or new password'}), 400
+
+    try:
+        # Fetch the logged-in user
+        user = User.query.filter_by(email=session['user_email']).first()
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+
+        # Check if the current password is correct
+        if not user.check_password(current_password):
+            return jsonify({'error': 'Current password is incorrect'}), 403
+
+        # Update the user's password
+        user.set_password(new_password)
+        db.session.commit()
+
+        return jsonify({'message': 'Password changed successfully'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'An error occurred while changing the password', 'details': str(e)}), 500
