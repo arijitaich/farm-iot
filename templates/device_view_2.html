@@ -510,14 +510,7 @@ document.getElementById('cancel-add-data-chart').addEventListener('click', () =>
     document.getElementById('add-data-chart-modal').classList.add('hidden');
 });
 
-document.getElementById('live-data').addEventListener('change', function () {
-    const dateRangeFields = document.getElementById('date-range-fields');
-    if (this.checked) {
-        dateRangeFields.classList.add('hidden');
-    } else {
-        dateRangeFields.classList.remove('hidden');
-    }
-});
+
 
 
 
@@ -586,6 +579,13 @@ document.getElementById('add-data-chart-form').addEventListener('submit', functi
             fetch('/create-chart', {
                 method: 'POST',
                 headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + localStorage.getItem('token')
+                },
+                body: JSON.stringify({
+                    device_id: deviceId,
+                    chart_name: chartName,
+                    chart_type: chartType,
                     x_axis_params: { label: xAxisParam, data: xAxisValues },
                     y_axis_params: yAxisDatasets,
                     is_live: liveData,
