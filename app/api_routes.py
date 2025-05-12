@@ -748,3 +748,39 @@ def change_password():
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': 'An error occurred while changing the password', 'details': str(e)}), 500
+
+
+@api_bp.route('/delete-device', methods=['POST'])
+@login_required
+def delete_device():
+    try:
+        req = request.get_json()
+        device_id = req.get('device_id')
+
+        if not device_id:
+            return jsonify({'error': 'Missing device_id'}), 400
+
+        # Get logged-in user
+        user = User.query.filter_by(email=session['user_email']).first()
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+
+        # Check device ownership
+        device = Device.query.filter_by(device_id=device_id, user_id=user.id).first()
+        if not device:
+            return jsonify({'error': 'Device not found or you do not have permission'}), 403
+
+        # Optional: Delete related data
+        SensorData.query.filter_by(device_id=device_id).delete()
+        Notification.query.filter_by(device_id=device_id).delete()
+        Alert.query.filter_by(device_id=device_id).delete()
+        Chart.query.filter_by(device_id=device_id).delete()
+
+        db.session.delete(device)
+        db.session.commit()
+
+        return jsonify({'message': 'Device deleted successfully'}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'An error occurred while deleting the device', 'details': str(e)}), 500
