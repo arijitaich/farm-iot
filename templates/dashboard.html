@@ -191,15 +191,18 @@
                 <div id="map" class="w-full h-96 rounded-lg shadow-lg"></div>
             </div>
 
-            <div class="mt-4 mb-4">
-                <input 
-                  type="text" 
-                  id="device-search" 
-                  placeholder="Search by Device ID or Name..." 
-                  class="w-full md:w-1/2 px-4 py-2 border border-gray-600 rounded-lg text-black"
-                >
-                <ul id="suggestions" class="absolute bg-white border border-gray-300 w-full md:w-1/2 z-10 rounded-md hidden text-black"></ul>
+            <div class="mt-4 mb-4 flex justify-center">
+                <div class="relative w-full md:w-1/2">
+                  <input 
+                    type="text" 
+                    id="device-search" 
+                    placeholder="Search by Device ID or Name..." 
+                    class="w-full px-4 py-2 border border-gray-600 rounded-lg text-black"
+                  >
+                  <ul id="suggestions" class="absolute left-0 right-0 bg-white border border-gray-300 z-10 rounded-md hidden text-black max-h-60 overflow-y-auto"></ul>
+                </div>
               </div>
+              
               
 
             <!-- Content cards or widgets -->
