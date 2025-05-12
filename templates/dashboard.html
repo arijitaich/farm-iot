@@ -62,6 +62,15 @@
             border: 2px solid white;
             border-radius: 0.5rem;
         }
+
+        #suggestions li {
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        #suggestions li:last-child {
+            border-bottom: none;
+        }
+
     </style>
     <link href="https://cdn.jsdelivr.net/npm/hopscotch@0.3.1/dist/css/hopscotch.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/hopscotch@0.3.1/dist/js/hopscotch.min.js"></script>
@@ -156,6 +165,7 @@
                 </div>
             </div>
 
+            
             <!-- Overall Stats Card -->
             <div class="bg-gray-800 p-6 mt-6 rounded-lg shadow-lg text-white ">
                 <h2 class="text-2xl font-semibold mb-4">Overall Stats</h2>
@@ -181,6 +191,16 @@
                 <div id="map" class="w-full h-96 rounded-lg shadow-lg"></div>
             </div>
 
+            <div class="mt-4 mb-4">
+                <input 
+                  type="text" 
+                  id="device-search" 
+                  placeholder="Search by Device ID or Name..." 
+                  class="w-full md:w-1/2 px-4 py-2 border border-gray-600 rounded-lg text-black"
+                >
+                <ul id="suggestions" class="absolute bg-white border border-gray-300 w-full md:w-1/2 z-10 rounded-md hidden text-black"></ul>
+              </div>
+              
 
             <!-- Content cards or widgets -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8" id="device-cards">
@@ -789,6 +809,54 @@ startMultiStepTour([
     }
     
 ]);
+
+
+
+let allDevices = [];
+// 👇 SEARCH + FILTER
+document.addEventListener("DOMContentLoaded", () => {
+    const searchInput = document.getElementById("device-search");
+    const suggestionsList = document.getElementById("suggestions");
+
+    searchInput.addEventListener("keyup", () => {
+        const keyword = searchInput.value.trim().toLowerCase();
+
+        if (!keyword) {
+            suggestionsList.innerHTML = '';
+            suggestionsList.classList.add("hidden");
+            updateDeviceCards(allDevices);
+            return;
+        }
+
+        const filtered = allDevices.filter(d =>
+            d.device_name.toLowerCase().includes(keyword) ||
+            d.device_id.toLowerCase().includes(keyword)
+        );
+
+        updateDeviceCards(filtered);
+
+        // Optional: show suggestions
+        suggestionsList.innerHTML = filtered.map(d =>
+            `<li class="px-4 py-2 hover:bg-gray-200 cursor-pointer">${d.device_name} (${d.device_id})</li>`
+        ).join('');
+
+        suggestionsList.classList.remove("hidden");
+
+        Array.from(suggestionsList.children).forEach((li, index) => {
+            li.addEventListener("click", () => {
+                searchInput.value = filtered[index].device_name;
+                suggestionsList.classList.add("hidden");
+                updateDeviceCards([filtered[index]]);
+            });
+        });
+    });
+
+    document.addEventListener("click", e => {
+        if (!suggestionsList.contains(e.target) && e.target !== searchInput) {
+            suggestionsList.classList.add("hidden");
+        }
+    });
+});
 
 
 </script>
