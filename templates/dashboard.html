@@ -497,11 +497,17 @@
                 const offsetLng = lng + (0.0001 * count);
                 const position = { lat: offsetLat, lng: offsetLng };
 
+                const markerIcon = device.is_active
+                    ? 'http://maps.google.com/mapfiles/ms/icons/green-dot.png'
+                    : 'http://maps.google.com/mapfiles/ms/icons/red-dot.png';
+
                 const marker = new google.maps.Marker({
                     position,
                     map,
                     title: device.device_name,
+                    icon: markerIcon
                 });
+
 
                 const status = device.is_active ? '🟢 Active' : '🔴 Inactive';
                 const unseenCount = device.unseen_notifications || 0;
