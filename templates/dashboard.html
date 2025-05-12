@@ -465,6 +465,7 @@
         fetchDevices();
 
         let map;  // Global map variable
+
         function initializeMap(devices) {
             if (!devices || devices.length === 0) return;
 
@@ -502,8 +503,18 @@
                     title: device.device_name,
                 });
 
+                const status = device.is_active ? '🟢 Active' : '🔴 Inactive';
+                const unseenCount = device.unseen_notifications || 0;
+
                 const infoWindow = new google.maps.InfoWindow({
-                    content: `<strong>${device.device_name}</strong><br>ID: ${device.device_id}`
+                    content: `
+                        <div style="min-width: 220px; font-family: sans-serif;">
+                            <strong>${device.device_name}</strong><br>
+                            <b>ID:</b> ${device.device_id}<br>
+                            <b>Status:</b> ${status}<br>
+                            <b>Unseen Alerts:</b> ${unseenCount}
+                        </div>
+                    `
                 });
 
                 marker.addListener('click', () => {
@@ -515,6 +526,7 @@
 
             map.fitBounds(bounds);
         }
+
 
         document.getElementById('logout-btn').addEventListener('click', function () {
             showLoader();
