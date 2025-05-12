@@ -478,31 +478,24 @@
             let bounds = new google.maps.LatLngBounds();
 
             devices.forEach(device => {
-                if (!device.device_coordinates) {
-                    console.warn(`Device ${device.device_id} has no coordinates`);
-                    return;
-                }
+                console.log(`Device ${device.device_id} => ${device.device_coordinates}`);  // 🔍 NEW LINE
+
+                if (!device.device_coordinates) return;
 
                 const parts = device.device_coordinates.split(',');
-                if (parts.length !== 2) {
-                    console.warn(`Device ${device.device_id} has malformed coordinates: ${device.device_coordinates}`);
-                    return;
-                }
+                if (parts.length !== 2) return;
 
                 const lat = parseFloat(parts[0].trim());
                 const lng = parseFloat(parts[1].trim());
 
-                if (isNaN(lat) || isNaN(lng)) {
-                    console.warn(`Device ${device.device_id} has non-numeric coordinates: ${device.device_coordinates}`);
-                    return;
-                }
+                if (isNaN(lat) || isNaN(lng)) return;
 
                 const position = { lat, lng };
 
                 const marker = new google.maps.Marker({
                     position,
                     map,
-                    title: device.device_name
+                    title: device.device_name,
                 });
 
                 const infoWindow = new google.maps.InfoWindow({
