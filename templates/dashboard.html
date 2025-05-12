@@ -368,7 +368,8 @@
                     ? '<span class="bg-green-500 text-white text-xs px-2 py-1 rounded-full">Active</span>'
                     : '<span class="bg-red-500 text-white text-xs px-2 py-1 rounded-full">Inactive</span>';
                 
-                const unseenCount = device.unseen_notifications;
+                const unseenCount = device.unseen_notifications || 0;
+
                 const notifLabel = unseenCount > 0
                     ? `<span class="bg-yellow-400 text-black text-xs px-2 py-1 rounded-full ml-2">${unseenCount} Unseen</span>`
                     : '';
@@ -400,7 +401,11 @@
                     </div>
                 `;
                 deviceCards.appendChild(deviceCard);
+                console.log(`${device.device_id} unseen:`, device.unseen_notifications);
+
             });
+
+            
 
             document.querySelectorAll('.edit-device-btn').forEach(button => {
                 button.addEventListener('click', function () {
