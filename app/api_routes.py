@@ -82,8 +82,13 @@ def register_user():
 def get_devices():
     email = session['user_email']
     try:
-        # Fetch devices from the database
-        devices = Device.query.all()  # Modify this query if devices are linked to users
+        # ✅ Get only devices belonging to the logged-in user
+        user = User.query.filter_by(email=email).first()
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+
+        devices = Device.query.filter_by(user_id=user.id).all()
+
         thirty_days_ago = datetime.utcnow() - timedelta(days=30)
 
         device_list = [
@@ -102,7 +107,7 @@ def get_devices():
             }
             for device in devices
         ]
-        return jsonify({'devices': device_list, 'message': f'Devices for {email}'})
+        return jsonify({'devices': device_list})
     except Exception as e:
         return jsonify({'error': 'Failed to fetch devices', 'details': str(e)}), 500
 
