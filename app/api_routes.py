@@ -655,23 +655,31 @@ def mark_notifications_seen(device_id):
 @login_required
 def overall_stats():
     try:
-        # Fetch total devices
-        total_devices = Device.query.count()
+        # Get logged-in user
+        user = User.query.filter_by(email=session['user_email']).first()
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
 
-        # Fetch active devices (devices with data in the last 30 days)
+        # Get all devices owned by the user
+        user_devices = Device.query.filter_by(user_id=user.id).all()
+        device_ids = [d.device_id for d in user_devices]
+
+        total_devices = len(device_ids)
+
+        # Fetch active devices (with data in last 30 days)
         thirty_days_ago = datetime.utcnow() - timedelta(days=30)
         active_devices = (
-            db.session.query(Device)
-            .join(SensorData, Device.device_id == SensorData.device_id)
-            .filter(SensorData.timestamp >= thirty_days_ago)
-            .distinct(Device.device_id)
+            db.session.query(SensorData.device_id)
+            .filter(
+                SensorData.device_id.in_(device_ids),
+                SensorData.timestamp >= thirty_days_ago
+            )
+            .distinct()
             .count()
         )
 
-        # Calculate inactive devices
         inactive_devices = total_devices - active_devices
 
-        # Return the stats
         return jsonify({
             'total_devices': total_devices,
             'active_devices': active_devices,
