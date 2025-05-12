@@ -2,6 +2,9 @@ from . import db
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 
+CASCADE_OPTION = "all, delete-orphan"
+DEVICE_ID_FOREIGN_KEY = "device.device_id"
+
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(255), unique=True, nullable=False)
@@ -21,14 +24,17 @@ class Device(db.Model):
     device_name = db.Column(db.String(255))
     device_type = db.Column(db.String(255))
     device_description = db.Column(db.Text)
-    device_coordinates = db.Column(db.String(255))  # New field to store coordinates
+    device_coordinates = db.Column(db.String(255))
     registered_at = db.Column(db.DateTime, default=datetime.utcnow)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)  # Foreign key to link to the user
-    sensor_data = db.relationship('SensorData', backref='device', lazy=True)  # Add this relationship
+    sensor_data = db.relationship('SensorData', backref='device', lazy=True, cascade=CASCADE_OPTION)
+    charts = db.relationship('Chart', backref='device', lazy=True, cascade=CASCADE_OPTION)
+    notifications = db.relationship('Notification', backref='device', lazy=True, cascade=CASCADE_OPTION, foreign_keys='Notification.device_id')
+    alerts = db.relationship('Alert', backref='device', lazy=True, cascade=CASCADE_OPTION, foreign_keys='Alert.device_id')
+    notifications = db.relationship('Notification', backref='device', lazy=True, cascade=CASCADE_OPTION, foreign_keys='Notification.device_id')
+    alerts = db.relationship('Alert', backref='device', lazy=True, cascade=CASCADE_OPTION, foreign_keys='Alert.device_id')
 
 class SensorData(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    device_id = db.Column(db.String(255), db.ForeignKey('device.device_id'), nullable=False)
+    device_id = db.Column(db.String(255), db.ForeignKey(DEVICE_ID_FOREIGN_KEY), nullable=False)
     timestamp = db.Column(db.DateTime, nullable=False)
     data = db.Column(db.JSON)  # Store all parameters dynamically
 
