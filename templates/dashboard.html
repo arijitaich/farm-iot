@@ -813,6 +813,7 @@ startMultiStepTour([
 
 
 let allDevices = [];
+
 // 👇 SEARCH + FILTER
 document.addEventListener("DOMContentLoaded", () => {
     const searchInput = document.getElementById("device-search");
@@ -828,17 +829,19 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        const filtered = allDevices.filter(d =>
-            d.device_name.toLowerCase().includes(keyword) ||
-            d.device_id.toLowerCase().includes(keyword)
-        );
+        const filtered = allDevices.filter(d => {
+            const name = (d.device_name || '').toLowerCase().trim();
+            const id = (d.device_id || '').toLowerCase().trim();
+            return name.includes(keyword) || id.includes(keyword);
+        });
 
         updateDeviceCards(filtered);
 
-        // Optional: show suggestions
-        suggestionsList.innerHTML = filtered.map(d =>
-            `<li class="px-4 py-2 hover:bg-gray-200 cursor-pointer">${d.device_name} (${d.device_id})</li>`
-        ).join('');
+        suggestionsList.innerHTML = filtered.length === 0
+            ? `<li class="px-4 py-2 text-gray-500">No matches found</li>`
+            : filtered.map(d =>
+                `<li class="px-4 py-2 hover:bg-gray-200 cursor-pointer">${d.device_name} (${d.device_id})</li>`
+              ).join('');
 
         suggestionsList.classList.remove("hidden");
 
@@ -854,6 +857,9 @@ document.addEventListener("DOMContentLoaded", () => {
     document.addEventListener("click", e => {
         if (!suggestionsList.contains(e.target) && e.target !== searchInput) {
             suggestionsList.classList.add("hidden");
+            if (searchInput.value.trim() === '') {
+                updateDeviceCards(allDevices);
+            }
         }
     });
 });
