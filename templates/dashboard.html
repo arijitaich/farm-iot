@@ -472,14 +472,16 @@
                     if (data.error) {
                         showError(data.error);
                     } else {
-                        updateDeviceCards(data.devices);
-                        initializeMap(data.devices);
+                        allDevices = data.devices;  // ✅ Save to global state
+                        updateDeviceCards(allDevices);
+                        initializeMap(allDevices);
                     }
                 })
                 .catch(error => {
                     showError('An error occurred while fetching devices.');
                 });
         }
+
 
         // Call fetchDevices after defining it
         fetchDevices();
