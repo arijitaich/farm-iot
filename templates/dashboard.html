@@ -465,7 +465,6 @@
         fetchDevices();
 
         let map;  // Global map variable
-
         function initializeMap(devices) {
             if (!devices || devices.length === 0) return;
 
@@ -476,21 +475,26 @@
             });
 
             let bounds = new google.maps.LatLngBounds();
+            let coordMap = {};  // Track duplicates to apply offsets
 
             devices.forEach(device => {
-                console.log(`Device ${device.device_id} => ${device.device_coordinates}`);  // 🔍 NEW LINE
+                const coordStr = device.device_coordinates?.trim();
+                console.log(`Device ${device.device_id} => ${coordStr}`);
+                if (!coordStr) return;
 
-                if (!device.device_coordinates) return;
-
-                const parts = device.device_coordinates.split(',');
-                if (parts.length !== 2) return;
-
-                const lat = parseFloat(parts[0].trim());
-                const lng = parseFloat(parts[1].trim());
-
+                const [latStr, lngStr] = coordStr.split(',');
+                const lat = parseFloat(latStr);
+                const lng = parseFloat(lngStr);
                 if (isNaN(lat) || isNaN(lng)) return;
 
-                const position = { lat, lng };
+                const key = `${lat.toFixed(6)},${lng.toFixed(6)}`;
+                let count = coordMap[key] || 0;
+                coordMap[key] = count + 1;
+
+                // Offset slightly for each duplicate to make them visible
+                const offsetLat = lat + (0.0001 * count);
+                const offsetLng = lng + (0.0001 * count);
+                const position = { lat: offsetLat, lng: offsetLng };
 
                 const marker = new google.maps.Marker({
                     position,
@@ -511,7 +515,6 @@
 
             map.fitBounds(bounds);
         }
-
 
         document.getElementById('logout-btn').addEventListener('click', function () {
             showLoader();
