@@ -676,8 +676,9 @@
             })
             .catch(error => {
                 hideLoader();
-                showError('An error occurred. Please try again.');
+                showError(`An error occurred: ${error.message || error}`);
             });
+
         }
 
         function fetchOverallStats() {
