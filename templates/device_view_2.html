@@ -1616,7 +1616,7 @@ function convertToIST(utcTimestamp) {
     const utcDate = new Date(utcTimestamp);
     const istOffset = 5.5 * 60 * 60 * 1000; // IST is UTC+5:30
     const istDate = new Date(utcDate.getTime() + istOffset);
-    return istDate.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+    return istDate.toLocaleString('en-IN', { timeZone: 'Asia/Mumbai' });
 }
 
 // Update "All Device Records" to show timestamps in IST
