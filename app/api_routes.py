@@ -89,7 +89,7 @@ def get_devices():
 
         devices = Device.query.filter_by(user_id=user.id).all()
 
-        thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+        thirty_minutes_ago = datetime.utcnow() - timedelta(minutes=30)  # Changed from 30 days to 30 minutes
 
         device_list = [
             {
@@ -101,7 +101,7 @@ def get_devices():
                 'registered_at': device.registered_at.isoformat(),
                 'is_active': SensorData.query.filter(
                     SensorData.device_id == device.device_id,
-                    SensorData.timestamp >= thirty_days_ago
+                    SensorData.timestamp >= thirty_minutes_ago  # Updated time window
                 ).count() > 0,
                 'unseen_notifications': Notification.query.filter_by(device_id=device.device_id, seen=False).count()
             }
@@ -666,13 +666,14 @@ def overall_stats():
 
         total_devices = len(device_ids)
 
-        # Fetch active devices (with data in last 30 days)
-        thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+        # Fetch active devices (with data in last 30 minutes)
+        thirty_minutes_ago = datetime.utcnow() - timedelta(minutes=30)  # Changed from 30 days to 30 minutes
+
         active_devices = (
             db.session.query(SensorData.device_id)
             .filter(
-                SensorData.device_id.in_(device_ids),
-                SensorData.timestamp >= thirty_days_ago
+                SensorData.device_id.in_(device_ids),  # Only consider devices owned by the user
+                SensorData.timestamp >= thirty_minutes_ago  # Check if data exists in the last 30 minutes
             )
             .distinct()
             .count()
