@@ -191,7 +191,7 @@ def store_sensor_data():
         # Create a new SensorData record
         new_sensor_data = SensorData(
             device_id=device_id,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.utcnow(),  # Ensure timestamp is stored in UTC
             data=data
         )
         db.session.add(new_sensor_data)
