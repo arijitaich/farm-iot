@@ -1278,7 +1278,7 @@ function generateChartsForDevice(deviceId) {
 
             const xAxisParam = 'time'; // Assuming time is always the X-axis parameter
             const yAxisParams = Object.keys(data[0].data); // Dynamically get Y-axis parameters from the first data point
-            const xAxisValues = data.map(point => point[xAxisParam]);
+            const xAxisValues = data.map(point => convertToIST(point[xAxisParam])); // Convert timestamps to IST
 
             // Clear previous charts if any
             document.getElementById('chart_response').innerHTML = '';
@@ -1306,7 +1306,7 @@ function generateChartsForDevice(deviceId) {
                 new Chart(ctx, {
                     type: 'line', // or 'bar', 'pie', etc.
                     data: {
-                        labels: xAxisValues,
+                        labels: xAxisValues, // Use IST timestamps for X-axis labels
                         datasets: [{
                             label: titleCase(param),
                             data: paramData,
@@ -1396,7 +1396,7 @@ document.getElementById('all-data-tab').addEventListener('click', function () {
             // Create time cell
             const timeCell = document.createElement('td');
             timeCell.className = 'px-4 py-2 border-b border-gray-600';
-            timeCell.textContent = record.time;
+            timeCell.textContent = convertToIST(record.time); // Convert to IST
             
             // Create parameters cell
             const paramsCell = document.createElement('td');
@@ -1608,6 +1608,160 @@ document.getElementById('live-data').addEventListener('change', toggleDateRangeF
 
 // Initialize the visibility on page load
 document.addEventListener('DOMContentLoaded', toggleDateRangeFields);
+</script>
+
+<script>
+// Function to convert UTC timestamp to IST
+function convertToIST(utcTimestamp) {
+    const utcDate = new Date(utcTimestamp);
+    const istOffset = 5.5 * 60 * 60 * 1000; // IST is UTC+5:30
+    const istDate = new Date(utcDate.getTime() + istOffset);
+    return istDate.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+}
+
+// Update "All Device Records" to show timestamps in IST
+document.getElementById('all-data-tab').addEventListener('click', function () {
+    // ...existing code...
+    fetch(`/device_data_all/${deviceId}`, {
+        headers: {
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        const allDataList = document.getElementById('all-data-list');
+        allDataList.innerHTML = '';
+
+        // Sort data in descending order of timestamp
+        data.sort((a, b) => new Date(b.time) - new Date(a.time));
+
+        data.forEach(record => {
+            const row = document.createElement('tr');
+            row.className = 'hover:bg-gray-700';
+            
+            // Create time cell
+            const timeCell = document.createElement('td');
+            timeCell.className = 'px-4 py-2 border-b border-gray-600';
+            timeCell.textContent = convertToIST(record.time); // Convert to IST
+            
+            // Create parameters cell
+            const paramsCell = document.createElement('td');
+            paramsCell.className = 'px-4 py-2 border-b border-gray-600';
+            const paramsList = Object.entries(record.data)
+                .map(([key, value]) => `${key}: ${value}`)
+                .join(', ');
+            paramsCell.textContent = paramsList;
+            
+            row.appendChild(timeCell);
+            row.appendChild(paramsCell);
+            allDataList.appendChild(row);
+        });
+        
+        hideLoader();
+    })
+    .catch(error => {
+        console.error('Error fetching all device data:', error);
+        hideLoader();
+        showError('Error fetching device data');
+    });
+});
+
+// Update chart rendering to show timestamps in IST
+function generateChartsForDevice(deviceId) {
+    fetch(`/device_data_last_20/${deviceId}`, {
+        headers: {
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.error) {
+            showError(data.error);
+        } else {
+            if (data.length === 0) {
+                console.log('No data available for the selected device.');
+                return;
+            }
+
+            const xAxisParam = 'time'; // Assuming time is always the X-axis parameter
+            const yAxisParams = Object.keys(data[0].data); // Dynamically get Y-axis parameters from the first data point
+            const xAxisValues = data.map(point => convertToIST(point[xAxisParam])); // Convert timestamps to IST
+
+            // Clear previous charts if any
+            document.getElementById('chart_response').innerHTML = '';
+
+            // Create a wrapper div for all charts
+            const gridContainer = document.createElement('div');
+            gridContainer.className = 'grid grid-cols-1 md:grid-cols-3 gap-4';
+            document.getElementById('chart_response').appendChild(gridContainer);
+
+            // Create a chart for each Y-axis parameter
+            yAxisParams.forEach(param => {
+                const paramData = data.map(point => point.data[param]);
+
+                // Create a container for each chart
+                const chartContainer = document.createElement('div');
+                chartContainer.className = 'bg-gradient-to-r from-teal-500 to-cyan-600 p-4 rounded-lg shadow-lg text-white card-border';
+                chartContainer.innerHTML = `
+                    <h3 class="text-lg font-semibold">${titleCase(param)}</h3>
+                    <canvas id="chart_${param}"></canvas>
+                `;
+                gridContainer.appendChild(chartContainer);
+
+                const ctx = document.getElementById(`chart_${param}`).getContext('2d');
+
+                new Chart(ctx, {
+                    type: 'line', // or 'bar', 'pie', etc.
+                    data: {
+                        labels: xAxisValues, // Use IST timestamps for X-axis labels
+                        datasets: [{
+                            label: titleCase(param),
+                            data: paramData,
+                            backgroundColor: getRandomColor(),
+                            borderColor: getRandomColor(),
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: titleCase(xAxisParam)
+                                }
+                            },
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            });
+        
+            const chartResponseDiv = document.getElementById('chart_response');
+
+            // Check if the element exists
+            if (chartResponseDiv) {
+                // Move all child nodes out of the chart_response div
+                while (chartResponseDiv.firstChild) {
+                    chartResponseDiv.parentNode.insertBefore(chartResponseDiv.firstChild, chartResponseDiv);
+                }
+
+                // Remove the chart_response div
+                chartResponseDiv.remove();
+            }
+        }
+    })
+    .catch(error => {
+        console.error('There was a problem with the fetch operation:', error);
+        showError('An error occurred while fetching device data.');
+    });
+}
 </script>
 
 </body>
