@@ -22,6 +22,10 @@ Session = sessionmaker(bind=engine)
 models_path = os.path.join(os.path.dirname(__file__), "models.py")
 spec = importlib.util.spec_from_file_location("models", models_path)
 models = importlib.util.module_from_spec(spec)
+
+# Patch sys.modules so "models" sees itself as a top-level module (removes relative import error)
+sys.modules["models"] = models
+
 spec.loader.exec_module(models)
 Device = models.Device
 SensorData = models.SensorData
@@ -51,5 +55,5 @@ def run_demo_data_worker():
             session.close()
         time.sleep(60)  # Check every 60 seconds
 
-if __name__ == "__main__":
+if __name__ == "__main__": 
     run_demo_data_worker()
