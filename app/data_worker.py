@@ -2,7 +2,6 @@ import time
 from datetime import datetime, timedelta
 from sqlalchemy import create_engine, desc
 from sqlalchemy.orm import sessionmaker
-from models import Device, SensorData
 import os
 from dotenv import load_dotenv
 
@@ -14,6 +13,9 @@ DATABASE_URI = os.getenv("DATABASE_URL", "sqlite:///../instance/app.db")
 
 engine = create_engine(DATABASE_URI)
 Session = sessionmaker(bind=engine)
+
+# Import models using absolute import (not relative)
+from app.models import Device, SensorData
 
 def ensure_recent_sensor_data(session, device_id):
     thirty_minutes_ago = datetime.utcnow() - timedelta(minutes=30)
