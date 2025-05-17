@@ -18,6 +18,7 @@ from .models import Chart  # Import Chart model
 from .models import Alert  # Import Alert model
 from .models import Notification  # Import Notification model
 from sqlalchemy import func  
+from sqlalchemy import desc
 
 api_bp = Blueprint('api', __name__)
 r = redis.from_url(os.getenv("REDIS_URL"))
@@ -28,6 +29,20 @@ DEVICE_NOT_FOUND_MSG = 'Device not found'
 AES_KEY = os.getenv("AES_KEY").encode()
 
 def pad(s): return s + (16 - len(s) % 16) * ' '
+
+def ensure_recent_sensor_data(device_id):
+    """Ensure there is a sensor data record for the device within the last 30 minutes.
+    If not, create a demo record using the last available data."""
+    thirty_minutes_ago = datetime.utcnow() - timedelta(minutes=30)
+    last_data = SensorData.query.filter_by(device_id=device_id).order_by(desc(SensorData.timestamp)).first()
+    if last_data and last_data.timestamp < thirty_minutes_ago:
+        demo_data = SensorData(
+            device_id=device_id,
+            timestamp=datetime.utcnow(),
+            data=last_data.data
+        )
+        db.session.add(demo_data)
+        db.session.commit()
 
 @api_bp.route('/login', methods=['POST'])
 def login():
@@ -82,14 +97,16 @@ def register_user():
 def get_devices():
     email = session['user_email']
     try:
-        # ✅ Get only devices belonging to the logged-in user
         user = User.query.filter_by(email=email).first()
         if not user:
             return jsonify({'error': 'User not found'}), 404
 
         devices = Device.query.filter_by(user_id=user.id).all()
+        thirty_minutes_ago = datetime.utcnow() - timedelta(minutes=30)
 
-        thirty_minutes_ago = datetime.utcnow() - timedelta(minutes=30)  # Changed from 30 days to 30 minutes
+        # Ensure demo record for each device if needed
+        for device in devices:
+            ensure_recent_sensor_data(device.device_id)
 
         device_list = [
             {
@@ -267,6 +284,7 @@ def get_all_device_data(device_id):
 @login_required
 def get_device_data(device_id):
     try:
+        ensure_recent_sensor_data(device_id)
         # Fetch device information
         device = Device.query.filter_by(device_id=device_id).first()
         if not device:
@@ -298,6 +316,7 @@ def get_device_data(device_id):
 @login_required
 def get_last_20_device_data(device_id):
     try:
+        ensure_recent_sensor_data(device_id)
         # Fetch the last 20 sensor data records for the device
         records = SensorData.query.filter_by(device_id=device_id).order_by(SensorData.timestamp.desc()).limit(20).all()
         data_list = [
@@ -315,6 +334,7 @@ def get_last_20_device_data(device_id):
 @api_bp.route('/device_data_range/<device_id>', methods=['GET'])
 @login_required
 def get_device_data_range(device_id):
+    ensure_recent_sensor_data(device_id)
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
 
@@ -353,6 +373,7 @@ def get_device_data_range(device_id):
 @login_required
 def get_all_device_data_records(device_id):
     try:
+        ensure_recent_sensor_data(device_id)
         # Fetch all sensor data records for the device
         records = SensorData.query.filter_by(device_id=device_id).order_by(SensorData.timestamp.asc()).all()
         data_list = [
