@@ -4,6 +4,9 @@ from sqlalchemy import create_engine, desc
 from sqlalchemy.orm import sessionmaker
 import os
 from dotenv import load_dotenv
+import sys
+
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
 # Load environment variables from .env file
 load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
@@ -15,7 +18,7 @@ engine = create_engine(DATABASE_URI)
 Session = sessionmaker(bind=engine)
 
 # Import models using absolute import (not relative)
-from app.models import Device, SensorData
+from models import Device, SensorData
 
 def ensure_recent_sensor_data(session, device_id):
     thirty_minutes_ago = datetime.utcnow() - timedelta(minutes=30)
