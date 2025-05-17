@@ -6,6 +6,7 @@ import os
 from dotenv import load_dotenv
 import sys
 import importlib.util
+import requests
 
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
@@ -48,12 +49,25 @@ def run_demo_data_worker():
         try:
             devices = session.query(Device).all()
             for device in devices:
-                ensure_recent_sensor_data(session, device.device_id)
+                thirty_minutes_ago = datetime.utcnow() - timedelta(minutes=30)
+                last_data = session.query(SensorData).filter_by(device_id=device.device_id).order_by(desc(SensorData.timestamp)).first()
+                if not last_data or last_data.timestamp < thirty_minutes_ago:
+                    # Compose demo data GET request
+                    demo_url = (
+                        f"http://35.244.6.163:5000/data"
+                        f"?device_id={device.device_id}"
+                        f"&batper=88&batvtg=4.10&humidity=61.00&moisture=0.18&temperature=35.30"
+                    )
+                    try:
+                        resp = requests.get(demo_url, timeout=10)
+                        print(f"Demo data sent for device {device.device_id}: {resp.status_code}")
+                    except Exception as e:
+                        print(f"Failed to send demo data for device {device.device_id}: {e}")
         except Exception as e:
             print(f"Demo data worker error: {e}")
         finally:
             session.close()
         time.sleep(60)  # Check every 60 seconds
 
-if __name__ == "__main__": 
+if __name__ == "__main__":
     run_demo_data_worker()
