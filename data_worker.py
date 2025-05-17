@@ -19,20 +19,12 @@ DATABASE_URI = os.getenv("DATABASE_URL", "sqlite:///../instance/app.db")
 engine = create_engine(DATABASE_URI)
 Session = sessionmaker(bind=engine)
 
-# Dynamically import models.py as a module to avoid relative import issues
-models_path = os.path.join(os.path.dirname(__file__), "models.py")
-if not os.path.isfile(models_path):
-    print(f"Error: models.py not found at {models_path}")
+# Import models from app.models
+try:
+    from app.models import Device, SensorData
+except ImportError as e:
+    print("Error: Could not import Device and SensorData from app.models:", e)
     sys.exit(1)
-spec = importlib.util.spec_from_file_location("models", models_path)
-models = importlib.util.module_from_spec(spec)
-
-# Patch sys.modules so "models" sees itself as a top-level module (removes relative import error)
-sys.modules["models"] = models
-
-spec.loader.exec_module(models)
-Device = models.Device
-SensorData = models.SensorData
 
 def ensure_recent_sensor_data(session, device_id):
     thirty_minutes_ago = datetime.utcnow() - timedelta(minutes=30)
