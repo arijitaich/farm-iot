@@ -21,6 +21,9 @@ Session = sessionmaker(bind=engine)
 
 # Dynamically import models.py as a module to avoid relative import issues
 models_path = os.path.join(os.path.dirname(__file__), "models.py")
+if not os.path.isfile(models_path):
+    print(f"Error: models.py not found at {models_path}")
+    sys.exit(1)
 spec = importlib.util.spec_from_file_location("models", models_path)
 models = importlib.util.module_from_spec(spec)
 
