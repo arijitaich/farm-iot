@@ -14,7 +14,17 @@ sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
 
 # Use the DATABASE_URL from .env (not SQLALCHEMY_DATABASE_URI)
-DATABASE_URI = os.getenv("DATABASE_URL", "sqlite:///../instance/app.db")
+db_url = os.getenv("DATABASE_URL", "sqlite:///../instance/app.db")
+if db_url.startswith("sqlite:///"):
+    # Convert to absolute path for SQLite
+    rel_path = db_url.replace("sqlite:///", "", 1)
+    abs_path = os.path.abspath(os.path.join(os.path.dirname(__file__), rel_path))
+    db_url = f"sqlite:///{abs_path}"
+    # Ensure the directory exists
+    db_dir = os.path.dirname(abs_path)
+    os.makedirs(db_dir, exist_ok=True)
+
+DATABASE_URI = db_url
 
 engine = create_engine(DATABASE_URI)
 Session = sessionmaker(bind=engine)
