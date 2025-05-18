@@ -97,6 +97,58 @@ def get_weather_and_soil_data(coord_str):
 
     return results
 
+def estimate_temp_hum_moisture(coord_str):
+    try:
+        lat_str, lon_str = coord_str.split(",")
+        lat = float(lat_str.strip())
+        lon = float(lon_str.strip())
+    except ValueError:
+        return {"error": "Invalid coordinate format. Use 'lat,lon'"}
+
+    url = (
+        f"https://api.open-meteo.com/v1/forecast?"
+        f"latitude={lat}&longitude={lon}&current=temperature_2m,relative_humidity_2m"
+    )
+
+    try:
+        response = requests.get(url)
+        if response.status_code == 200:
+            current = response.json().get("current", {})
+            temp = current.get("temperature_2m")
+            rh = current.get("relative_humidity_2m")
+
+            if temp is not None and rh is not None:
+                # Empirical estimation
+                estimated_soil_moisture = rh / (temp + 1)
+                return {
+                    "temperature_celsius": temp,
+                    "humidity_percent": rh,
+                    "estimated_soil_moisture_index": round(estimated_soil_moisture, 2)
+                }
+            else:
+                return {"error": "Temperature or humidity not found"}
+        else:
+            return {"error": f"API Error: {response.status_code}"}
+    except Exception as e:
+        return {"error": str(e)}
+    
+def predict_next_data_from_history(records):
+    # Simple moving average for each field
+    n = len(records)
+    if n == 0:
+        return {}
+    avg_temp = sum(r.data.get("temperature", 0) for r in records) / n
+    avg_humidity = sum(r.data.get("humidity", 0) for r in records) / n
+    avg_moisture = sum(r.data.get("moisture", 0) for r in records) / n
+    avg_batper = sum(r.data.get("batper", 0) for r in records) / n
+    avg_batvtg = sum(r.data.get("batvtg", 0) for r in records) / n
+    return {
+        "temperature": round(avg_temp, 2),
+        "humidity": round(avg_humidity, 2),
+        "moisture": round(avg_moisture, 3),
+        "batper": round(avg_batper, 2),
+        "batvtg": round(avg_batvtg, 2)
+    }
 
 def run_demo_data_worker():
     while True:
@@ -104,23 +156,29 @@ def run_demo_data_worker():
         try:
             devices = session.query(Device).all()
             for device in devices:
+                # Get all records for the device
+                records = session.query(SensorData).filter_by(device_id=device.device_id).order_by(desc(SensorData.timestamp)).limit(50).all()
+                record_count = len(records)
                 thirty_minutes_ago = datetime.utcnow() - timedelta(minutes=30)
-                last_data = session.query(SensorData).filter_by(device_id=device.device_id).order_by(desc(SensorData.timestamp)).first()
+                last_data = records[0] if records else None
                 if not last_data or last_data.timestamp < thirty_minutes_ago:
-                    # Get weather and soil data
-                    data = get_weather_and_soil_data("22.5726,88.3639")
-                    
-                    # Default values if last_data is missing or doesn't have these fields
-                    batper = 88
-                    batvtg = 4.10
-                    if last_data and isinstance(last_data.data, dict):
-                        batper = last_data.data.get("batper", batper)
-                        batvtg = last_data.data.get("batvtg", batvtg)
-                    
-                    humidity = data.get("humidity_percent", 61.00)
-                    moisture = data.get("soil_moisture_m3m3", 0.18)
-                    temperature = data.get("temperature_celsius", 35.30)
-
+                    if record_count < 10:
+                        # Use estimate_temp_hum_moisture
+                        data = estimate_temp_hum_moisture("22.5726,88.3639")
+                        temperature = data.get("temperature_celsius", 35.30)
+                        humidity = data.get("humidity_percent", 61.00)
+                        moisture = data.get("estimated_soil_moisture_index", 0.18)
+                        # Use last_data for battery if available, else defaults
+                        batper = last_data.data.get("batper", 88) if last_data and isinstance(last_data.data, dict) else 88
+                        batvtg = last_data.data.get("batvtg", 4.10) if last_data and isinstance(last_data.data, dict) else 4.10
+                    else:
+                        # Predict using historical data
+                        pred = predict_next_data_from_history(records)
+                        temperature = pred["temperature"]
+                        humidity = pred["humidity"]
+                        moisture = pred["moisture"]
+                        batper = pred["batper"]
+                        batvtg = pred["batvtg"]
                     demo_url = (
                         f"http://35.244.6.163:5000/data"
                         f"?device_id={device.device_id}"
