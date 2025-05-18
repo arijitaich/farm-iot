@@ -52,6 +52,51 @@ def ensure_recent_sensor_data(session, device_id):
         )
         session.add(demo_data)
         session.commit()
+        
+def get_weather_and_soil_data(coord_str):
+    try:
+        lat_str, lon_str = coord_str.split(",")
+        lat = float(lat_str.strip())
+        lon = float(lon_str.strip())
+    except ValueError:
+        return {"error": "Invalid coordinate format. Use 'lat,lon'"}
+
+    results = {}
+
+    # 1. Temperature & Humidity from Open-Meteo
+    weather_url = (
+        f"https://api.open-meteo.com/v1/forecast?"
+        f"latitude={lat}&longitude={lon}&current=temperature_2m,relative_humidity_2m"
+    )
+    weather_response = requests.get(weather_url)
+
+    if weather_response.status_code == 200:
+        data = weather_response.json()
+        current = data.get("current", {})
+        results['temperature_celsius'] = current.get("temperature_2m")
+        results['humidity_percent'] = current.get("relative_humidity_2m")
+    else:
+        results['weather_error'] = f"Weather fetch failed: {weather_response.status_code}"
+
+    # 2. Soil Moisture (0–1cm layer)
+    soil_url = (
+        f"https://api.open-meteo.com/v1/forecast?"
+        f"latitude={lat}&longitude={lon}&daily=soil_moisture_0_1cm_mean&timezone=auto"
+    )
+    soil_response = requests.get(soil_url)
+
+    if soil_response.status_code == 200:
+        soil_data = soil_response.json()
+        daily = soil_data.get("daily", {})
+        if daily.get("soil_moisture_0_1cm_mean"):
+            results['soil_moisture_m3m3'] = daily["soil_moisture_0_1cm_mean"][0]
+        else:
+            results['soil_moisture_error'] = "No soil moisture data"
+    else:
+        results['soil_moisture_error'] = f"Soil data fetch failed: {soil_response.status_code}"
+
+    return results
+
 
 def run_demo_data_worker():
     while True:
@@ -62,11 +107,24 @@ def run_demo_data_worker():
                 thirty_minutes_ago = datetime.utcnow() - timedelta(minutes=30)
                 last_data = session.query(SensorData).filter_by(device_id=device.device_id).order_by(desc(SensorData.timestamp)).first()
                 if not last_data or last_data.timestamp < thirty_minutes_ago:
-                    # Compose demo data GET request
+                    # Get weather and soil data
+                    data = get_weather_and_soil_data("22.5726,88.3639")
+                    
+                    # Default values if last_data is missing or doesn't have these fields
+                    batper = 88
+                    batvtg = 4.10
+                    if last_data and isinstance(last_data.data, dict):
+                        batper = last_data.data.get("batper", batper)
+                        batvtg = last_data.data.get("batvtg", batvtg)
+                    
+                    humidity = data.get("humidity_percent", 61.00)
+                    moisture = data.get("soil_moisture_m3m3", 0.18)
+                    temperature = data.get("temperature_celsius", 35.30)
+
                     demo_url = (
                         f"http://35.244.6.163:5000/data"
                         f"?device_id={device.device_id}"
-                        f"&batper=88&batvtg=4.10&humidity=61.00&moisture=0.18&temperature=35.30"
+                        f"&batper={batper}&batvtg={batvtg}&humidity={humidity}&moisture={moisture}&temperature={temperature}"
                     )
                     try:
                         resp = requests.get(demo_url, timeout=10)
@@ -78,6 +136,7 @@ def run_demo_data_worker():
         finally:
             session.close()
         time.sleep(60)  # Check every 60 seconds
+
 
 if __name__ == "__main__":
     run_demo_data_worker()
