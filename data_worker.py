@@ -133,15 +133,20 @@ def estimate_temp_hum_moisture(coord_str):
         return {"error": str(e)}
     
 def predict_next_data_from_history(records):
-    # Simple moving average for each field
+    # Simple moving average for each field, casting to float if possible
+    def safe_float(val):
+        try:
+            return float(val)
+        except (TypeError, ValueError):
+            return 0.0
     n = len(records)
     if n == 0:
         return {}
-    avg_temp = sum(r.data.get("temperature", 0) for r in records) / n
-    avg_humidity = sum(r.data.get("humidity", 0) for r in records) / n
-    avg_moisture = sum(r.data.get("moisture", 0) for r in records) / n
-    avg_batper = sum(r.data.get("batper", 0) for r in records) / n
-    avg_batvtg = sum(r.data.get("batvtg", 0) for r in records) / n
+    avg_temp = sum(safe_float(r.data.get("temperature", 0)) for r in records) / n
+    avg_humidity = sum(safe_float(r.data.get("humidity", 0)) for r in records) / n
+    avg_moisture = sum(safe_float(r.data.get("moisture", 0)) for r in records) / n
+    avg_batper = sum(safe_float(r.data.get("batper", 0)) for r in records) / n
+    avg_batvtg = sum(safe_float(r.data.get("batvtg", 0)) for r in records) / n
     return {
         "temperature": round(avg_temp, 2),
         "humidity": round(avg_humidity, 2),
