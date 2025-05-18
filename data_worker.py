@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
 # Load environment variables from .env file
 load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
-
+os.environ['DATABASE_URL'] = 'mysql+pymysql://farmiot:green5en5@localhost:3306/iot_dashboard_v1_04_2025'
 # Use the DATABASE_URL from .env (not SQLALCHEMY_DATABASE_URI)
 db_url = os.getenv("DATABASE_URL", "sqlite:///../instance/app.db")
 if db_url.startswith("sqlite:///"):
@@ -20,9 +20,14 @@ if db_url.startswith("sqlite:///"):
     rel_path = db_url.replace("sqlite:///", "", 1)
     abs_path = os.path.abspath(os.path.join(os.path.dirname(__file__), rel_path))
     db_url = f"sqlite:///{abs_path}"
-    # Ensure the directory exists
+    # Ensure the directory exists, or print a clear error if not possible
     db_dir = os.path.dirname(abs_path)
-    os.makedirs(db_dir, exist_ok=True)
+    if not os.path.isdir(db_dir):
+        try:
+            os.makedirs(db_dir, exist_ok=True)
+        except PermissionError:
+            print(f"Error: Cannot create database directory '{db_dir}'. Please create it manually and ensure proper permissions.")
+            sys.exit(1)
 
 DATABASE_URI = db_url
 
